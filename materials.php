@@ -1265,6 +1265,16 @@ var materials=[
 ];
 
 var expandedIds={};
+var visibleCols={
+  sku: true,
+  vendor: true,
+  varcount: true,
+  qty: true,
+  type_badge: true,
+  collection_btn: true,
+  value: false,
+  avgcost: false,
+};
 var curPage=1;
 var PAGE_SIZE=15;
 var activeF={qmode:'',qval:null,qmin:null,qmax:null,types:[],vendors:[],varcount:'',flags:[],sort:'name'};
