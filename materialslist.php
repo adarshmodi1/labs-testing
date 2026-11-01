@@ -601,12 +601,6 @@ input[type=file]{display:none;}
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 17.5l9 2 3.5-15.5-2-.5s0-1.5-2-2-2.5.5-2.5.5l-1-.5-5 16z"/></svg>
         <span>Import from Shopify</span>
       </div>
-    </div>
-
-    <div style="height:0.5px;background:var(--br);margin:0 16px;"></div>
-
-    <div style="padding:8px 0;">
-      <div style="padding:6px 18px 4px;font-size:10px;font-weight:500;color:var(--tx3);text-transform:uppercase;letter-spacing:0.4px;">Settings</div>
       </div><!-- /navsec-tools -->
       <!-- Settings section -->
       <div class="nav-sec-hdr" id="navsec-cfg-hdr" onclick="toggleNavSec('cfg')">
@@ -618,8 +612,9 @@ input[type=file]{display:none;}
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm0-5a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
         <span>Variant categories</span>
       </div>
+      </div><!-- /navsec-cfg -->
     </div>
-  </div>
+  </div><!-- /nav-drawer -->
   <div style="flex:1;" onclick="closeSheet('sh-nav')"></div>
 </div>
 
