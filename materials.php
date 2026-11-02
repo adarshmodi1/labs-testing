@@ -2273,7 +2273,7 @@ function buildInfoHTML(){
       '</div>'+
       '<div class="bc-row"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7v10M8 7v10M12 7v10M16 7v10M20 7v10M6 7v10M10 7v10M14 7v10M18 7v10"/></svg>'+
         '<input class="bc-inp" id="bci-'+vi+'" type="text" placeholder="Barcode…" value="'+esc(v.barcode||'')+'" oninput="editMat.variants['+vi+'].barcode=this.value"/>'+
-        '<span class="bc-gen-btn" onclick="genBarcode('+vi+')">Generate</span>'+
+        '<span class="bc-gen-btn" onclick="genBarcode('+vi+',this)">Generate</span>'+
       '</div>'+
     '</div>';
   });
@@ -2281,9 +2281,20 @@ function buildInfoHTML(){
   return '<div class="sec" style="margin-top:10px;">'+
     '<div class="sec-hdr" style="border-bottom:none;"><span class="sec-title">Basic info</span></div>'+
     '<div class="f"><div class="lbl">Product title *</div><input class="inp" id="f-title" type="text" placeholder="e.g. Blue Offshoulder Chatri Aakaar" value="'+esc(m.name)+'"/></div>'+
-    '<div class="f2"><div><div class="lbl">SKU</div><input class="inp" id="f-sku" type="text" placeholder="MTOCA-BLUE-XS" value="'+esc(m.sku)+'"/></div><div><div class="lbl">Design no.</div><input class="inp" id="f-design" type="text" placeholder="Optional" value="'+esc(m.design||'')+'"/></div></div>'+
+    '<div class="f2"><div><div class="lbl">Base SKU <span style="font-size:10px;color:var(--tx3);font-weight:400;">(prefix for variant SKUs)</span></div><input class="inp" id="f-sku" type="text" placeholder="e.g. MTOCA-BLUE" value="'+esc(m.sku)+'"/></div><div><div class="lbl">Design no.</div><input class="inp" id="f-design" type="text" placeholder="Optional" value="'+esc(m.design||'')+'"/></div></div>'+
     '<div class="f2"><div><div class="lbl">Material type</div><select class="inp" id="f-type"><option value="finished"'+(m.type==='finished'?' selected':'')+'>Finished good</option><option value="raw"'+(m.type==='raw'?' selected':'')+'>Raw material</option><option value="production"'+(m.type==='production'?' selected':'')+'>Production</option></select></div>'+
     '<div><div class="lbl">Unit</div><select class="inp" id="f-unit"><option>Inches (in)</option><option>Metres (m)</option><option>Pieces</option><option>Kilograms</option></select></div></div>'+
+  '</div>'+
+
+  '<div class="sec">'+
+    '<div class="sec-hdr"><span class="sec-title">Global pricing</span><span style="font-size:11px;color:var(--tx3);">Set once, copy to all variants</span></div>'+
+    '<div style="padding:10px 14px 4px;font-size:11px;color:var(--tx3);">These are product-level defaults. Use "Copy to all variants" to push them down.</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:8px 14px 4px;">'+
+      '<div><div class="lbl">MRP <span style="font-size:10px;color:var(--tx3);">(printed price)</span></div><div style="display:flex;align-items:center;gap:3px;background:var(--sf2);border:0.5px solid var(--br2);border-radius:var(--rads);padding:6px 8px;"><span style="font-size:12px;color:var(--tx3);">₹</span><input type="number" id="g-mrp" placeholder="0" value="'+(m.globalMRP||'')+'" style="border:none;background:transparent;font-size:13px;font-weight:500;color:var(--tx);width:100%;outline:none;font-family:inherit;" oninput="editMat.globalMRP=parseFloat(this.value)||0"/></div></div>'+
+      '<div><div class="lbl">Offer price <span style="font-size:10px;color:var(--tx3);">(selling price)</span></div><div style="display:flex;align-items:center;gap:3px;background:var(--sf2);border:0.5px solid var(--pm);border-radius:var(--rads);padding:6px 8px;"><span style="font-size:12px;color:var(--tx3);">₹</span><input type="number" id="g-offer" placeholder="0" value="'+(m.globalOffer||'')+'" style="border:none;background:transparent;font-size:13px;font-weight:600;color:var(--p);width:100%;outline:none;font-family:inherit;" oninput="editMat.globalOffer=parseFloat(this.value)||0"/></div></div>'+
+      '<div><div class="lbl">Cost <span style="font-size:10px;color:var(--tx3);">(your cost)</span></div><div style="display:flex;align-items:center;gap:3px;background:var(--sf2);border:0.5px solid var(--br2);border-radius:var(--rads);padding:6px 8px;"><span style="font-size:12px;color:var(--tx3);">₹</span><input type="number" id="g-cost" placeholder="0" value="'+(m.globalCost||'')+'" style="border:none;background:transparent;font-size:13px;font-weight:500;color:var(--tx);width:100%;outline:none;font-family:inherit;" oninput="editMat.globalCost=parseFloat(this.value)||0"/></div></div>'+
+    '</div>'+
+    '<button onclick="copyGlobalPricing()" style="margin:8px 14px 14px;width:calc(100% - 28px);padding:9px;border-radius:var(--rads);background:var(--pl);border:0.5px solid var(--pm);color:var(--pt);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-4-4H8v4h8M8 12h8M8 16h4"/></svg> Copy pricing to all variants</button>'+
   '</div>'+
 
   '<div class="sec">'+
@@ -2331,12 +2342,17 @@ function buildInfoHTML(){
   '</button>'+
 
   (m.variants&&m.variants.length?
-    '<div class="apply-banner">'+
-      '<div class="apply-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-4-4H8v4h8M8 12h8M8 16h4"/></svg></div>'+
-      '<div class="apply-text"><div class="apply-title">Apply to all variants</div><div class="apply-sub">Copy pricing, images or inventory</div></div>'+
-      '<button class="apply-btn" onclick="openSheet(\'sh-bulk\')">Apply</button>'+
+    '<div style="margin:0 12px 10px;padding:12px;background:var(--sf);border-radius:var(--rad);border:0.5px solid var(--br);">'+
+      '<div style="font-size:13px;font-weight:500;color:var(--tx);margin-bottom:8px;">Apply to all variants</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">'+
+        '<label style="display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:8px;border:0.5px solid var(--br2);background:var(--sf2);cursor:pointer;font-size:12px;color:var(--tx);"><input type="checkbox" id="bulk-pricing" style="accent-color:var(--p);"/> Pricing (MRP + offer)</label>'+
+        '<label style="display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:8px;border:0.5px solid var(--br2);background:var(--sf2);cursor:pointer;font-size:12px;color:var(--tx);"><input type="checkbox" id="bulk-images" style="accent-color:var(--p);"/> Images</label>'+
+        '<label style="display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:8px;border:0.5px solid var(--br2);background:var(--sf2);cursor:pointer;font-size:12px;color:var(--tx);"><input type="checkbox" id="bulk-stock" style="accent-color:var(--p);"/> Opening stock qty</label>'+
+        '<label style="display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:8px;border:0.5px solid var(--br2);background:var(--sf2);cursor:pointer;font-size:12px;color:var(--tx);"><input type="checkbox" id="bulk-barcode" style="accent-color:var(--p);"/> Auto-gen barcodes from SKU</label>'+
+      '</div>'+
+      '<button onclick="applyCheckedBulk()" style="width:100%;padding:9px;border-radius:var(--rads);background:var(--p);color:#fff;border:none;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;">Apply selected</button>'+
     '</div>'+
-    '<div style="padding:10px 12px 4px;display:flex;align-items:center;justify-content:space-between;">'+
+    '<div style="padding:6px 12px 4px;display:flex;align-items:center;justify-content:space-between;">'+
       '<span style="font-size:13px;font-weight:500;color:var(--tx);">Variants ('+m.variants.length+')</span>'+
     '</div>'+
     vmHTML
@@ -2943,7 +2959,7 @@ function genBarcode(vi){
   editMat.variants[vi].barcode=sku;
   var inp=document.getElementById('bci-'+vi);
   if(inp)inp.value=sku;
-  showToast('Barcode set to SKU');
+  showToast('Barcode set to SKU · tap 🏷 Label to print');
 }
 
 // ═══════════════════════════════
@@ -3060,22 +3076,52 @@ function buildMDOverview(m){
   document.getElementById('mdpg-0').innerHTML=html;
 }
 function buildMDVariants(m){
-  var html='<div style="padding:10px 14px 4px;display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;font-weight:500;color:var(--tx2);">'+m.variants.length+' variant'+(m.variants.length===1?'':'s')+'</span></div>'+
-  '<div style="background:var(--sf);margin:0 12px 8px;border-radius:var(--rad);border:0.5px solid var(--br);overflow:hidden;">';
-  m.variants.forEach(function(v,vi){
-    var qOk=v.qty>=(v.minqty||0);
-    html+='<div class="vrow" style="cursor:pointer;" onclick="openVarDetail('+vi+')">'+
-      '<span class="vi-in"><span class="vi-ln"></span><span class="vi-cn"></span></span>'+
-      '<div class="vi-inner">'+
-        '<span class="vdot" style="background:'+(v.color||'#999')+'"></span>'+
-        '<div class="viinf"><div class="viname">'+esc(v.name||'Variant')+'</div><div class="visku">'+esc(v.sku||'')+'</div></div>'+
-        '<span class="viqty '+(qOk?'ok':'lo')+'">'+v.qty+'</span>'+
-        '<span style="font-size:11px;color:var(--tx2);margin-left:6px;">Rs.'+(v.offer||v.mrp||0)+'</span>'+
-        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:6px;flex-shrink:0;"><path d="M9 18l6-6-6-6"/></svg>'+
-      '</div></div>';
-  });
-  html+='</div>';
+  var _vSort='name';
+  function renderVList(){
+    var sorted=m.variants.slice().sort(function(a,b){
+      if(_vSort==='qty')return (b.qty||0)-(a.qty||0);
+      if(_vSort==='price')return (b.offer||b.mrp||0)-(a.offer||a.mrp||0);
+      return (a.name||'').localeCompare(b.name||'');
+    });
+    var rows='';
+    sorted.forEach(function(v,_vi){
+      var vi=m.variants.indexOf(v);
+      var qOk=v.qty>=(v.minqty||0);
+      rows+='<div style="padding:10px 12px;border-bottom:0.5px solid var(--br);display:flex;align-items:flex-start;gap:10px;">'+
+        '<span style="width:10px;height:10px;border-radius:50%;background:'+(v.color||'#999')+';flex-shrink:0;margin-top:3px;display:inline-block;"></span>'+
+        '<div style="flex:1;min-width:0;">'+
+          '<div style="font-size:13px;font-weight:500;color:var(--tx);">'+esc(v.name||'Variant')+'</div>'+
+          '<div style="font-size:11px;color:var(--tx3);font-family:monospace;margin-top:1px;">'+esc(v.sku||'No SKU')+'</div>'+
+          '<div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;">'+
+            '<span style="font-size:11px;color:var(--tx2);">Stock: <strong style="color:'+(qOk?'var(--g)':'var(--r)')+'">'+v.qty+'</strong>'+(v.minqty?' / min '+v.minqty:'')+'</span>'+
+            '<span style="font-size:11px;color:var(--tx2);">₹'+(v.offer||v.mrp||0)+'</span>'+
+          '</div>'+
+        '</div>'+
+        '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0;">'+
+          '<button onclick="event.stopPropagation();openVarDetail('+vi+')" style="font-size:11px;color:var(--p);background:none;border:none;cursor:pointer;padding:0;font-family:inherit;white-space:nowrap;">Edit →</button>'+
+          '<button onclick="event.stopPropagation();printLabelForVariant('+m.id+','+vi+')" style="font-size:11px;color:var(--tx2);background:var(--sf2);border:0.5px solid var(--br2);border-radius:6px;cursor:pointer;padding:3px 7px;font-family:inherit;white-space:nowrap;">🏷 Label</button>'+
+        '</div>'+
+      '</div>';
+    });
+    document.getElementById('vlist-rows').innerHTML=rows;
+  }
+  var html=
+    '<div style="padding:8px 12px 4px;display:flex;align-items:center;gap:8px;">'+
+      '<span style="font-size:12px;font-weight:500;color:var(--tx2);flex:1;">'+m.variants.length+' variant'+(m.variants.length===1?'':'s')+'</span>'+
+      '<span style="font-size:11px;color:var(--tx3);">Sort:</span>'+
+      '<select id="vlist-sort" style="font-size:11px;padding:4px 6px;border-radius:6px;border:0.5px solid var(--br2);background:var(--sf);color:var(--tx);font-family:inherit;cursor:pointer;">'+
+        '<option value="name">Name</option>'+
+        '<option value="qty">Stock (high→low)</option>'+
+        '<option value="price">Price (high→low)</option>'+
+      '</select>'+
+    '</div>'+
+    '<div style="background:var(--sf);margin:0 12px 8px;border-radius:var(--rad);border:0.5px solid var(--br);overflow:hidden;">'+
+      '<div id="vlist-rows"></div>'+
+    '</div>';
   document.getElementById('mdpg-1').innerHTML=html;
+  var sel=document.getElementById('vlist-sort');
+  if(sel)sel.onchange=function(){_vSort=this.value;renderVList();};
+  renderVList();
 }
 /* buildMDMovement replaced by v6 version above */
 function buildMDSupply(m){
@@ -3651,6 +3697,75 @@ function applyAll(type){
   var msgs={pricing:'MRP and offer price applied to all variants',images:'Images applied to all variants',stock:'Opening stock set for all variants',barcode:'Barcodes auto-generated for all variants',minqty:'Min quantity applied to all variants'};
   showToast(msgs[type]||'Applied to all variants');
   if(type==='barcode'&&editMat.variants){editMat.variants.forEach(function(v){v.barcode=v.sku||v.name;});}
+}
+
+function copyGlobalPricing(){
+  if(!editMat.variants||!editMat.variants.length){showToast('No variants yet');return;}
+  var mrp=editMat.globalMRP||0;
+  var offer=editMat.globalOffer||0;
+  var cost=editMat.globalCost||0;
+  if(!mrp&&!offer&&!cost){showToast('Set global pricing first');return;}
+  editMat.variants.forEach(function(v){
+    if(mrp)v.mrp=mrp;
+    if(offer)v.offer=offer;
+    if(cost)v.cost=cost;
+  });
+  document.getElementById('cpg-0').innerHTML=buildInfoHTML();
+  showToast('Pricing copied to all '+editMat.variants.length+' variants ✓');
+}
+
+function applyCheckedBulk(){
+  var doPricing=document.getElementById('bulk-pricing')&&document.getElementById('bulk-pricing').checked;
+  var doImages=document.getElementById('bulk-images')&&document.getElementById('bulk-images').checked;
+  var doStock=document.getElementById('bulk-stock')&&document.getElementById('bulk-stock').checked;
+  var doBarcode=document.getElementById('bulk-barcode')&&document.getElementById('bulk-barcode').checked;
+  if(!doPricing&&!doImages&&!doStock&&!doBarcode){showToast('Select at least one option');return;}
+  var msgs=[];
+  if(doPricing&&editMat.variants){
+    var mrp=editMat.variants[0].mrp||0;var offer=editMat.variants[0].offer||0;
+    editMat.variants.forEach(function(v){if(mrp)v.mrp=mrp;if(offer)v.offer=offer;});
+    msgs.push('pricing');
+  }
+  if(doImages&&editMat.variants){
+    var imgs=editMat.variants[0].images||[];
+    editMat.variants.forEach(function(v){v.images=imgs.slice();});
+    msgs.push('images');
+  }
+  if(doStock&&editMat.variants){
+    var qty=editMat.variants[0].qty||0;
+    editMat.variants.forEach(function(v){v.qty=qty;});
+    msgs.push('stock');
+  }
+  if(doBarcode&&editMat.variants){
+    editMat.variants.forEach(function(v){v.barcode=v.sku||v.name;});
+    msgs.push('barcodes');
+  }
+  document.getElementById('cpg-0').innerHTML=buildInfoHTML();
+  showToast('Applied '+msgs.join(', ')+' to all variants ✓');
+}
+
+function printLabelForVariant(matId, varIdx){
+  var m=materials.find(function(x){return x.id===matId;});
+  if(!m)return;
+  var v=m.variants[varIdx];
+  if(!v)return;
+  _alMatId=matId; _alVarIdx=varIdx;
+  _alSelectedDesignId=labelDesigns.length?labelDesigns[0].id:null;
+  var sr=document.getElementById('al-search');if(sr)sr.value=v.name||'';
+  var vs=document.getElementById('al-variant-section');if(vs)vs.style.display='block';
+  var varSel=document.getElementById('al-variant');
+  if(varSel){
+    varSel.innerHTML=m.variants.map(function(vv,i){return '<option value="'+i+'"'+(i===varIdx?' selected':'')+'>'+esc(vv.name)+'</option>';}).join('');
+  }
+  var ar=document.getElementById('al-results');
+  if(ar)ar.innerHTML='<div onclick="selectALMaterial('+matId+')" style="padding:10px 12px;border-bottom:0.5px solid var(--br);cursor:pointer;display:flex;align-items:center;gap:10px;background:var(--pl);">'+
+    '<div style="flex:1;"><div style="font-size:13px;font-weight:500;color:var(--tx);">'+esc(m.name)+'</div><div style="font-size:11px;color:var(--tx3);">'+esc(m.sku||'')+'</div></div>'+
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--p)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>'+
+    '</div>';
+  renderALDesignPills();renderALCustomFields();
+  pushScreen('labels');
+  setLTab(0);
+  setTimeout(function(){openSheet('sh-addlabel');},200);
 }
 
 // ═══════════════════════════════
