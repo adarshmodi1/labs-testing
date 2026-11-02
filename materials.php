@@ -713,10 +713,10 @@ input[type=file]{display:none;}
 <!-- ════════════════════ SCREEN: LIST ════════════════════ -->
 <div class="screen on" id="s-list">
   <div class="tb">
-    <button class="tbb ghost" onclick="openSheet('sh-nav')" aria-label="Menu" style="flex-shrink:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
+    <button class="tb-bk" onclick="openSheet('sh-nav')" aria-label="Menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
     <div class="tb-info"><div class="tb-title">Materials</div><div class="tb-sub" id="list-sub">VB Asansol</div></div>
     <div class="tb-acts">
-      <button class="tbb ghost" onclick="openColToggle()" title="Columns" aria-label="Columns"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7m0-18H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7m0-18v18"/></svg></button>
+      <button class="tb-bk" onclick="openColToggle()" title="Columns" aria-label="Columns"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7m0-18H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7m0-18v18"/></svg></button>
       <div class="view-toggle" id="view-toggle">
         <button class="vtb on" id="vtb-list" onclick="setView('list')" title="List" aria-label="List view"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>
         <button class="vtb" id="vtb-gallery" onclick="setView('gallery')" title="Gallery" aria-label="Gallery view"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
@@ -3782,7 +3782,7 @@ renderList();
       <div class="tab" id="ltab-2" onclick="setLTab(2)">Clients</div>
     </div>
   </div>
-  <div class="screen-body" style="padding:0;">
+  <div class="scroll-body" style="padding:0;">
     <div id="lpg-0" style="display:block;">
       <div style="padding:10px 12px 4px;display:flex;align-items:center;justify-content:space-between;">
         <span style="font-size:13px;color:var(--tx2);" id="lq-count">0 items in queue</span>
@@ -3813,7 +3813,7 @@ renderList();
       <button class="tbb white" onclick="window.print()" style="display:inline-flex;align-items:center;gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Print</button>
     </div>
   </div>
-  <div class="screen-body" style="padding:12px;background:var(--sf2);">
+  <div class="scroll-body" style="padding:12px;background:var(--sf2);">
     <div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <span style="font-size:12px;color:var(--tx2);">Paper:</span>
       <select id="prev-paper" onchange="buildPrintPreview()" style="padding:5px 8px;border-radius:6px;border:0.5px solid var(--br2);font-size:12px;font-family:inherit;background:var(--sf);">
@@ -3960,7 +3960,7 @@ renderList();
 
 /* ─ VIEW MODES ─ */
 .view-toggle{display:flex;gap:3px;}
-.vtb{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--tx3);flex-shrink:0;}
+.vtb{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:none;cursor:pointer;background:transparent;color:rgba(255,255,255,0.55);flex-shrink:0;}
 .vtb.on{background:rgba(255,255,255,0.22);color:#fff;}
 /* gallery 2-col */
 .view-gallery #mat-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px 12px 16px;}
@@ -4213,6 +4213,7 @@ function openAddLabelSheet(){
   var vs=document.getElementById('al-variant-section');if(vs)vs.style.display='none';
   var aq=document.getElementById('al-qty');if(aq)aq.value='1';
   renderALDesignPills();renderALCustomFields();
+  openSheet('sh-addlabel');
 }
 
 function searchAddLabel(q){
