@@ -1,4 +1,5 @@
 <?php header("Content-Type: text/html; charset=UTF-8"); ?>
+<!-- BoutiqBiz Materials v7 — clean rebuild 2026-11-02 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
