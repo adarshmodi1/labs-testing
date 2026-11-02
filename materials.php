@@ -3768,15 +3768,19 @@ renderList();
 
 <!-- s-labels screen -->
 <div class="screen" id="s-labels">
-  <div class="hdr">
-    <button class="back-btn" onclick="goBack()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
-    <span class="hdr-title">Print Labels</span>
-    <button onclick="openAddLabelSheet()" style="background:var(--p);color:#fff;border:none;padding:6px 14px;border-radius:var(--rads);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;">+ Add</button>
+  <div class="tb">
+    <button class="tb-bk" onclick="goBack()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+    <div class="tb-info"><div class="tb-title">Print Labels</div></div>
+    <div class="tb-acts">
+      <button class="tbb white" onclick="openAddLabelSheet()">+ Add</button>
+    </div>
   </div>
-  <div class="tab-strip" style="border-bottom:0.5px solid var(--br);">
-    <button class="tab on" id="ltab-0" onclick="setLTab(0)">Queue</button>
-    <button class="tab" id="ltab-1" onclick="setLTab(1)">Designs</button>
-    <button class="tab" id="ltab-2" onclick="setLTab(2)">Clients</button>
+  <div class="tab-strip">
+    <div class="tab-inner">
+      <div class="tab on" id="ltab-0" onclick="setLTab(0)">Queue</div>
+      <div class="tab" id="ltab-1" onclick="setLTab(1)">Designs</div>
+      <div class="tab" id="ltab-2" onclick="setLTab(2)">Clients</div>
+    </div>
   </div>
   <div class="screen-body" style="padding:0;">
     <div id="lpg-0" style="display:block;">
@@ -3802,10 +3806,12 @@ renderList();
 
 <!-- s-label-preview screen -->
 <div class="screen" id="s-label-preview">
-  <div class="hdr">
-    <button class="back-btn" onclick="goBack()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
-    <span class="hdr-title">Print Preview</span>
-    <button onclick="window.print()" style="display:inline-flex;align-items:center;gap:5px;padding:6px 14px;background:var(--p);color:#fff;border:none;border-radius:var(--rads);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Print</button>
+  <div class="tb">
+    <button class="tb-bk" onclick="goBack()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+    <div class="tb-info"><div class="tb-title">Print Preview</div></div>
+    <div class="tb-acts">
+      <button class="tbb white" onclick="window.print()" style="display:inline-flex;align-items:center;gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Print</button>
+    </div>
   </div>
   <div class="screen-body" style="padding:12px;background:var(--sf2);">
     <div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
