@@ -601,6 +601,12 @@ input[type=file]{display:none;}
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 17.5l9 2 3.5-15.5-2-.5s0-1.5-2-2-2.5.5-2.5.5l-1-.5-5 16z"/></svg>
         <span>Import from Shopify</span>
       </div>
+    </div>
+
+    <div style="height:0.5px;background:var(--br);margin:0 16px;"></div>
+
+    <div style="padding:8px 0;">
+      <div style="padding:6px 18px 4px;font-size:10px;font-weight:500;color:var(--tx3);text-transform:uppercase;letter-spacing:0.4px;">Settings</div>
       </div><!-- /navsec-tools -->
       <!-- Settings section -->
       <div class="nav-sec-hdr" id="navsec-cfg-hdr" onclick="toggleNavSec('cfg')">
@@ -612,9 +618,8 @@ input[type=file]{display:none;}
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm0-5a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
         <span>Variant categories</span>
       </div>
-      </div><!-- /navsec-cfg -->
     </div>
-  </div><!-- /nav-drawer -->
+  </div>
   <div style="flex:1;" onclick="closeSheet('sh-nav')"></div>
 </div>
 
@@ -915,7 +920,7 @@ input[type=file]{display:none;}
     <div class="tab-inner">
       <div class="tab on" id="mdtab-0" onclick="setMDTab(0)">Overview</div>
       <div class="tab" id="mdtab-1" onclick="setMDTab(1)">Variants</div>
-      <div class="tab" id="mdtab-2" onclick="setMDTab(2)">Movement</div>
+      <div class="tab" id="mdtab-2" onclick="setMDTab(2)">Inventory</div>
       <div class="tab" id="mdtab-3" onclick="setMDTab(3)">Supply</div>
     </div>
   </div>
@@ -2661,10 +2666,14 @@ function buildSupplyHTML(){
       '<span class="tp-linked-badge">Linked</span>'+
       '<span style="font-size:12px;color:var(--tx3);cursor:pointer;" onclick="unlinkTP()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></span>'+
     '</div>'+
-    '<div id="tp-empty" style="display:'+(m.techpack?'none':'flex')+';align-items:center;gap:7px;padding:12px 14px;">'+
-      '<svg style="font-size:15px;color:var(--tx3);" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4l16 16M14 2H6a2 2 0 0 0-2 2v3M8 21h10a2 2 0 0 0 2-2V8"/></svg>'+
-      '<span style="flex:1;font-size:13px;color:var(--tx3);">No techpack linked</span>'+
-      '<span style="font-size:12px;color:var(--p);cursor:pointer;font-weight:500;" onclick="toggleTPDropdown()">Link from module</span>'+
+    '<div id="tp-empty" style="display:'+(m.techpack?'none':'flex')+';flex-direction:column;gap:10px;padding:14px;">'+
+      '<span style="font-size:13px;color:var(--tx3);">No techpack linked yet.</span>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
+        '<button onclick="toggleTPDropdown()" style="padding:7px 13px;border-radius:8px;border:0.5px solid var(--br);background:var(--sf2);color:var(--tx1);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;">🔗 Link existing</button>'+
+        '<button onclick="showToast(\'Create techpack — coming soon\')" style="padding:7px 13px;border-radius:8px;border:0.5px solid var(--br);background:var(--sf2);color:var(--tx1);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;">✏️ Create techpack</button>'+
+        '<button onclick="document.getElementById(\'tp-upload-input\').click()" style="padding:7px 13px;border-radius:8px;border:0.5px solid var(--br);background:var(--sf2);color:var(--tx1);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;">⬆️ Upload techpack</button>'+
+        '<input id="tp-upload-input" type="file" accept=".pdf,.doc,.docx,.png,.jpg" style="display:none;" onchange="handleTPUpload(this)"/>'+
+      '</div>'+
     '</div>'+
     '<div id="tp-dropdown" style="display:none;border-top:0.5px solid var(--br);">'+
       '<div style="padding:7px 14px;font-size:11px;color:var(--tx3);">Your techpacks</div>'+
@@ -3632,6 +3641,7 @@ function linkTP(name){
   showToast('Techpack linked');
 }
 function unlinkTP(){editMat.techpack='';var ln=document.getElementById('tp-linked');var em=document.getElementById('tp-empty');if(ln)ln.style.display='none';if(em)em.style.display='flex';showToast('Techpack unlinked');}
+function handleTPUpload(inp){if(!inp.files||!inp.files[0])return;var f=inp.files[0];showToast('Uploaded: '+f.name+' (upload to server coming soon)');}
 
 // ═══════════════════════════════
 //  BULK APPLY
