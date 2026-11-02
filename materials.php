@@ -86,7 +86,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .screen.on{display:flex;flex-direction:column;min-height:100dvh;}
 
 /* ─ TOPBAR ─ */
-.tb{background:var(--p);padding:calc(max(var(--st),12px)+8px) 16px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.tb{background:var(--p);padding:20px 16px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
 .tb-bk{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.16);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;flex-shrink:0;}
 .tb-info{flex:1;min-width:0;}
 .tb-title{color:#fff;font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-0.2px;}
