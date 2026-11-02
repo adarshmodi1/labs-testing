@@ -404,7 +404,7 @@ input[type=file]{display:none;}
 .margin-info{display:flex;justify-content:space-between;padding:0 14px 10px;font-size:11px;color:var(--tx2);}
 
 /* ─ FILTER SHEET ─ */
-.sh-ov{display:none;min-height:500px;flex-direction:column;justify-content:flex-end;background:rgba(10,8,40,0.42);}
+.sh-ov{display:none;position:fixed;inset:0;flex-direction:column;justify-content:flex-end;background:rgba(10,8,40,0.42);z-index:500;}
 .sh-ov.open{display:flex;}
 .sh{background:var(--sf);border-radius:16px 16px 0 0;padding-bottom:calc(var(--sb)+14px);max-height:88vh;overflow-y:auto;}
 .sh-hdl{width:34px;height:4px;background:var(--br2);border-radius:2px;margin:11px auto 0;}
