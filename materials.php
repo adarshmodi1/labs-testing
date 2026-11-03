@@ -888,7 +888,6 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
 <div id="toast"></div>
 
 <script>
-<script>
 // ===== DATA =====
 var materials=[
   {id:1,name:'Cotton Kurta',type:'finished',sku:'CK-001',designNo:'D-001',unit:'pcs',
