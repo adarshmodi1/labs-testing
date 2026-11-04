@@ -2053,7 +2053,7 @@ function buildInfoHTML(m){
     html+='</div></div>';
   }
   // Variant categories
-  html+='<div class="card"><div class="sect-hd"><h3>Variant Categories</h3><button class="btn-sm" onclick="addCategory()">+ Add</button></div>';
+  html+='<div class="card"><div class="sect-hd"><h3>Variant Categories</h3><button class="btn-sm" onclick="showAddCategoryForm()">+ Add</button></div>';
   html+='<div id="ci-cats">';
   (m.cats||[]).forEach(function(cat,ci){
     html+='<div class="mb-8"><div class="row-between mb-4"><span class="fw-6 fs-13">'+esc(cat.name)+'</span><button class="btn-ghost" style="color:var(--r);" onclick="removeCategory('+ci+')">×</button></div>';
@@ -2062,6 +2062,16 @@ function buildInfoHTML(m){
     html+='</div></div>';
   });
   html+='</div>';
+  // Inline add-category form (hidden until + Add clicked)
+  html+='<div id="ci-add-cat-form" style="display:none;background:var(--sf2);border:1px solid #e0dff5;border-radius:10px;padding:12px;margin-top:8px;">';
+  html+='<div class="fld" style="margin-bottom:8px;"><label style="font-size:12px;margin-bottom:4px;">Category name</label>';
+  html+='<input id="ci-cat-name" type="text" placeholder="e.g. Size" style="font-size:14px;"></div>';
+  html+='<div class="fld" style="margin-bottom:10px;"><label style="font-size:12px;margin-bottom:4px;">Values <span style="color:var(--tx2);font-weight:400;">(comma-separated)</span></label>';
+  html+='<input id="ci-cat-vals" type="text" placeholder="e.g. S, M, L, XL" style="font-size:14px;" onkeydown="if(event.key===\'Enter\')addCategory();"></div>';
+  html+='<div style="display:flex;gap:8px;">';
+  html+='<button class="btn-sm" style="flex:1;" onclick="addCategory()">Add Category</button>';
+  html+='<button class="btn-ghost" style="font-size:13px;padding:6px 10px;" onclick="hideAddCategoryForm()">Cancel</button>';
+  html+='</div></div>';
   html+='<div style="margin-top:8px;display:flex;gap:8px;">'+
     '<select id="ci-preset" style="flex:1;"><option value="">Load preset…</option>';
   optionSets.forEach(function(os){html+='<option value="'+os.id+'">'+esc(os.name)+'</option>';});
@@ -2086,12 +2096,33 @@ function copyGlobalPricing(){
 function addVendorRow(){showToast('Vendor editor coming soon','info');}
 function removeVendorRow(i){var m=_editMatId?getMat(_editMatId):null;if(m&&m.vendors)m.vendors.splice(i,1);setCTab(0);}
 function deleteProdBOMLine(id){var m=_editMatId?getMat(_editMatId):null;if(m)m.bom=m.bom.filter(function(b){return b.id!==id;});setCTab(0);}
+function showAddCategoryForm(){
+  var el=document.getElementById('ci-add-cat-form');
+  if(!el)return;
+  el.style.display='block';
+  var inp=document.getElementById('ci-cat-name');
+  if(inp)setTimeout(function(){inp.focus();},50);
+}
+function hideAddCategoryForm(){
+  var el=document.getElementById('ci-add-cat-form');
+  if(el)el.style.display='none';
+  var n=document.getElementById('ci-cat-name');if(n)n.value='';
+  var v=document.getElementById('ci-cat-vals');if(v)v.value='';
+}
 function addCategory(){
-  var nm=prompt('Category name (e.g. Size):');if(!nm)return;
-  var vals=prompt('Values, comma-separated (e.g. S,M,L):');if(!vals)return;
+  var nmEl=document.getElementById('ci-cat-name');
+  var valsEl=document.getElementById('ci-cat-vals');
+  var nm=(nmEl?nmEl.value:'').trim();
+  var vals=(valsEl?valsEl.value:'').trim();
+  if(!nm){if(nmEl)nmEl.focus();showToast('Enter a category name','info');return;}
+  if(!vals){if(valsEl)valsEl.focus();showToast('Enter at least one value','info');return;}
   var m=_editMatId?getMat(_editMatId):null;
-  if(!m){window._pendingCats=window._pendingCats||[];window._pendingCats.push({name:nm,values:vals.split(',').map(function(v){return v.trim();})});setCTab(0);return;}
-  m.cats=m.cats||[];m.cats.push({name:nm,values:vals.split(',').map(function(v){return v.trim();})});
+  var catObj={name:nm,values:vals.split(',').map(function(v){return v.trim();}).filter(function(v){return v;})};
+  if(!m){window._pendingCats=window._pendingCats||[];window._pendingCats.push(catObj);hideAddCategoryForm();setCTab(0);return;}
+  m.cats=m.cats||[];
+  if(m.cats.find(function(c){return c.name.toLowerCase()===nm.toLowerCase();})){showToast(nm+' already added','info');if(nmEl)nmEl.focus();return;}
+  m.cats.push(catObj);
+  hideAddCategoryForm();
   setCTab(0);
 }
 function removeCategory(i){var m=_editMatId?getMat(_editMatId):null;if(m&&m.cats)m.cats.splice(i,1);setCTab(0);}
