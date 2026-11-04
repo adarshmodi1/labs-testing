@@ -796,16 +796,13 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
     <div class="sh-body">
       <div class="fld"><label>Name</label><input type="text" id="nc-name" placeholder="Collection name"></div>
       <div class="fld"><label>Description</label><textarea id="nc-desc" rows="2" placeholder="Optional description"></textarea></div>
-      <div class="fld"><label>Colour</label>
-        <div style="display:flex;gap:8px;margin-top:6px;" id="nc-colors">
-          <div class="col-swatch" data-c="#4A3BB5" style="width:28px;height:28px;border-radius:50%;background:#4A3BB5;cursor:pointer;border:2px solid transparent;"></div>
-          <div class="col-swatch" data-c="#1D9E75" style="width:28px;height:28px;border-radius:50%;background:#1D9E75;cursor:pointer;border:2px solid transparent;"></div>
-          <div class="col-swatch" data-c="#E24B4A" style="width:28px;height:28px;border-radius:50%;background:#E24B4A;cursor:pointer;border:2px solid transparent;"></div>
-          <div class="col-swatch" data-c="#BA7517" style="width:28px;height:28px;border-radius:50%;background:#BA7517;cursor:pointer;border:2px solid transparent;"></div>
-          <div class="col-swatch" data-c="#185FA5" style="width:28px;height:28px;border-radius:50%;background:#185FA5;cursor:pointer;border:2px solid transparent;"></div>
-          <div class="col-swatch" data-c="#1A1740" style="width:28px;height:28px;border-radius:50%;background:#1A1740;cursor:pointer;border:2px solid transparent;"></div>
+      <div class="fld">
+        <label>Visibility</label>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <button id="nc-vis-private" class="chip on" onclick="setColVisibility('private')" style="flex:1;">🔒 Private</button>
+          <button id="nc-vis-public" class="chip" onclick="setColVisibility('public')" style="flex:1;">🌐 Public</button>
         </div>
-        <input type="hidden" id="nc-color" value="#4A3BB5">
+        <input type="hidden" id="nc-visibility" value="private">
       </div>
       <button class="btn-p" onclick="saveCollection()">Save Collection</button>
     </div>
@@ -816,22 +813,49 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
 <div id="sh-sharelink" class="sh-ov" onclick="if(event.target===this)closeSheet('sh-sharelink')">
   <div class="sh">
     <div class="sh-handle"></div>
-    <div class="sh-hd"><h3>Preview Link</h3></div>
+    <div class="sh-hd"><h3>Share Settings</h3></div>
     <div class="sh-body">
       <div class="row-between mb-12">
-        <span class="fs-14 fw-6">Enable preview link</span>
-        <label class="sw"><input type="checkbox" id="sl-enabled" onchange="toggleShareLink()"><span class="sw-sl"></span></label>
+        <div><div class="fs-14 fw-6">Enable share link</div><div class="tx3 fs-12">Anyone with the link can view this collection</div></div>
+        <label class="sw"><input type="checkbox" id="sl-enabled" onchange="slToggle()"><span class="sw-sl"></span></label>
       </div>
-      <div id="sl-url-row" style="display:none;">
-        <div class="fld"><label>Link URL</label>
+      <div id="sl-link-section" style="display:none;">
+        <div class="fld"><label>Share URL</label>
           <div style="display:flex;gap:6px;align-items:center;">
-            <input type="text" id="sl-url" readonly style="flex:1;">
+            <input type="text" id="sl-url" readonly style="flex:1;font-size:12px;color:var(--tx2);">
             <button class="btn-sm" onclick="copyShareLink()">Copy</button>
           </div>
         </div>
-        <div class="fld"><label>Expiry Date (optional)</label><input type="date" id="sl-expiry"></div>
+        <div class="fld"><label>Expiry Date <span class="tx3" style="font-weight:400;">(optional)</span></label>
+          <input type="date" id="sl-expiry">
+          <div class="tx3 fs-12" style="margin-top:4px;">If set, the link will show an expiry message after this date.</div>
+        </div>
+        <button class="btn-s" onclick="slRegenerate()" style="width:100%;margin-bottom:8px;">↻ Regenerate link</button>
       </div>
       <button class="btn-p" onclick="saveShareLink()">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- sh-col-product-picker: Add Products to Collection -->
+<div id="sh-col-product-picker" class="sh-ov" onclick="if(event.target===this)closeSheet('sh-col-product-picker')">
+  <div class="sh" style="max-height:85dvh;">
+    <div class="sh-handle"></div>
+    <div class="sh-hd">
+      <h3>Add Products</h3>
+      <button class="btn-sm btn-p-sm" onclick="doneAddingProducts()">Done</button>
+    </div>
+    <div class="sh-body" style="padding-top:0;">
+      <input type="text" placeholder="Search by name or SKU…" oninput="colPickerSearch(this.value)" style="margin-bottom:10px;">
+      <div id="cppicker-filters" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+        <button class="chip on" data-f="all" onclick="colPickerFilter('all')">All</button>
+        <button class="chip" data-f="low" onclick="colPickerFilter('low')">Low stock</button>
+        <button class="chip" data-f="out" onclick="colPickerFilter('out')">Out of stock</button>
+        <button class="chip" data-f="finished" onclick="colPickerFilter('finished')">Finished</button>
+        <button class="chip" data-f="raw" onclick="colPickerFilter('raw')">Raw</button>
+        <button class="chip" data-f="added" onclick="colPickerFilter('added')">Already added</button>
+      </div>
+      <div id="cppicker-list" style="overflow-y:auto;max-height:52dvh;"></div>
     </div>
   </div>
 </div>
@@ -1259,7 +1283,8 @@ function buildMDCollections(m){
   var html='<div class="card"><div class="sect-hd"><h3>Collections</h3></div>';
   if(!mCols.length)html+='<div class="tx3 text-center fs-13" style="padding:16px 0;">Not in any collection yet</div>';
   mCols.forEach(function(c){
-    html+='<div class="loc-row"><div class="col-dot" style="background:'+c.color+'"></div><span class="fw-6 fs-13 flex-1">'+esc(c.name)+'</span><button class="btn-sm" onclick="openCDetail('+c.id+')">View</button></div>';
+    var vis=c.visibility==='public'?'🌐':'🔒';
+    html+='<div class="loc-row"><span class="fw-6 fs-13 flex-1">'+vis+' '+esc(c.name)+'</span><button class="btn-sm" onclick="openCDetail('+c.id+')">View</button></div>';
   });
   html+='</div>';
   return html;
@@ -1940,54 +1965,152 @@ function renderCollections(){
   var html='';
   collections.forEach(function(c){
     var cnt=(c.manualIds||[]).length;
+    var vis=c.visibility==='public'?'🌐 Public':'🔒 Private';
     html+='<div class="col-card" onclick="openCDetail('+c.id+')">';
-    html+='<div class="col-card-hd"><div class="col-dot" style="background:'+c.color+'"></div><div class="flex-1"><div class="fw-6 fs-14">'+esc(c.name)+'</div><div class="tx2 fs-12">'+cnt+' products</div></div></div>';
+    html+='<div class="col-card-hd"><div class="flex-1"><div class="fw-6 fs-14">'+esc(c.name)+'</div><div class="tx2 fs-12">'+cnt+' products · '+vis+'</div></div></div>';
     if(c.desc)html+='<div class="tx2 fs-13 mb-8">'+esc(c.desc)+'</div>';
     html+='</div>';
   });
   el.innerHTML=html;
 }
-function openNewCollection(){_editColId=null;document.getElementById('nc-title').textContent='New Collection';document.getElementById('nc-name').value='';document.getElementById('nc-desc').value='';document.getElementById('nc-color').value='#4A3BB5';openSheet('sh-newcol');}
-function editCurrentCollection(){if(!_editColId)return;var c=collections.find(function(x){return x.id===_editColId;});if(!c)return;document.getElementById('nc-title').textContent='Edit Collection';document.getElementById('nc-name').value=c.name;document.getElementById('nc-desc').value=c.desc||'';document.getElementById('nc-color').value=c.color||'#4A3BB5';openSheet('sh-newcol');}
+function setColVisibility(v){
+  document.getElementById('nc-visibility').value=v;
+  document.getElementById('nc-vis-private').className='chip'+(v==='private'?' on':'');
+  document.getElementById('nc-vis-public').className='chip'+(v==='public'?' on':'');
+}
+function openNewCollection(){
+  _editColId=null;
+  document.getElementById('nc-title').textContent='New Collection';
+  document.getElementById('nc-name').value='';
+  document.getElementById('nc-desc').value='';
+  setColVisibility('private');
+  openSheet('sh-newcol');
+}
+function editCurrentCollection(){
+  if(!_editColId)return;
+  var c=collections.find(function(x){return x.id===_editColId;});if(!c)return;
+  document.getElementById('nc-title').textContent='Edit Collection';
+  document.getElementById('nc-name').value=c.name;
+  document.getElementById('nc-desc').value=c.desc||'';
+  setColVisibility(c.visibility||'private');
+  openSheet('sh-newcol');
+}
 function saveCollection(){
   var nm=document.getElementById('nc-name').value.trim();if(!nm){showToast('Enter collection name','error');return;}
   var desc=document.getElementById('nc-desc').value;
-  var color=document.getElementById('nc-color').value||'#4A3BB5';
-  if(_editColId){var c=collections.find(function(x){return x.id===_editColId;});if(c){c.name=nm;c.desc=desc;c.color=color;}}
-  else{collections.push({id:nextId(collections),name:nm,desc:desc,color:color,tagRules:[],manualIds:[],previewLink:'',previewEnabled:false,previewExpiry:''});} 
+  var visibility=document.getElementById('nc-visibility').value||'private';
+  if(_editColId){
+    var c=collections.find(function(x){return x.id===_editColId;});
+    if(c){c.name=nm;c.desc=desc;c.visibility=visibility;}
+  } else {
+    collections.push({id:nextId(collections),name:nm,desc:desc,visibility:visibility,tagRules:[],manualIds:[],previewLink:'',previewEnabled:false,previewExpiry:''});
+  }
   closeSheet('sh-newcol');renderCollections();showToast('Collection saved');
 }
+// Product picker state
+var _colPickerSearch='';var _colPickerFilter='all';
+function openAddProductPicker(){
+  _colPickerSearch='';_colPickerFilter='all';
+  renderColProductPicker();
+  openSheet('sh-col-product-picker');
+}
+function renderColProductPicker(){
+  var search=_colPickerSearch.toLowerCase();
+  var c=collections.find(function(x){return x.id===_editColId;});
+  var already=c?c.manualIds:[];
+  var arr=materials.filter(function(m){
+    if(_colPickerFilter==='added')return already.indexOf(m.id)>=0;
+    if(_colPickerFilter==='low')return matStockStatus(m)==='low';
+    if(_colPickerFilter==='out')return matStockStatus(m)==='out';
+    if(_colPickerFilter==='raw')return m.type==='raw';
+    if(_colPickerFilter==='finished')return m.type==='finished';
+    return true;
+  }).filter(function(m){return !search||m.name.toLowerCase().indexOf(search)>=0||m.sku.toLowerCase().indexOf(search)>=0;});
+  var el=document.getElementById('cppicker-list');if(!el)return;
+  if(!arr.length){el.innerHTML='<div class="tx3 fs-13 text-center" style="padding:16px;">No products match</div>';return;}
+  var html='';
+  arr.forEach(function(m){
+    var inCol=already.indexOf(m.id)>=0;
+    var st=matStockStatus(m);
+    var stc=st==='ok'?'var(--gl)':st==='low'?'var(--al)':'var(--rl)';
+    var stl=st==='ok'?'In stock':st==='low'?'Low stock':'Out of stock';
+    html+='<div class="loc-row" style="cursor:pointer;" onclick="toggleColProduct('+m.id+')">';
+    html+='<div class="flex-1"><div class="fw-6 fs-13">'+esc(m.name)+'</div><div class="tx2 fs-12">'+esc(m.sku)+' · <span style="color:'+stc+';">'+stl+'</span></div></div>';
+    html+='<div style="width:22px;height:22px;border-radius:50%;border:2px solid var(--p);display:flex;align-items:center;justify-content:center;background:'+(inCol?'var(--p)':'transparent')+';color:'+(inCol?'#fff':'transparent')+';">✓</div>';
+    html+='</div>';
+  });
+  el.innerHTML=html;
+}
+function colPickerSearch(v){_colPickerSearch=v;renderColProductPicker();}
+function colPickerFilter(f){_colPickerFilter=f;document.querySelectorAll('#cppicker-filters .chip').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-f')===f);});renderColProductPicker();}
+function toggleColProduct(matId){
+  var c=collections.find(function(x){return x.id===_editColId;});if(!c)return;
+  var idx=c.manualIds.indexOf(matId);
+  if(idx>=0)c.manualIds.splice(idx,1);else c.manualIds.push(matId);
+  renderColProductPicker();
+}
+function doneAddingProducts(){closeSheet('sh-col-product-picker');openCDetail(_editColId);}
 function openCDetail(id){
   _editColId=id;
   var c=collections.find(function(x){return x.id===id;});if(!c)return;
   document.getElementById('cd-title').textContent=c.name;
   var el=document.getElementById('cdetail-body');
   var mats=materials.filter(function(m){return c.manualIds&&c.manualIds.indexOf(m.id)>=0;});
-  var html='<div class="card"><div class="sect-hd"><h3>'+mats.length+' Products</h3><button class="btn-sm" onclick="addProductToCollection()">+ Add</button></div>';
-  if(!mats.length)html+='<div class="tx3 text-center fs-13" style="padding:16px;">No products in this collection</div>';
+  var html='<div class="card"><div class="sect-hd"><h3>'+mats.length+' Products</h3><button class="btn-sm" onclick="openAddProductPicker()">+ Add</button></div>';
+  if(!mats.length)html+='<div class="tx3 text-center fs-13" style="padding:16px;">No products yet. Tap + Add to include materials.</div>';
   mats.forEach(function(m){
-    html+='<div class="loc-row"><div class="fw-6 fs-13 flex-1">'+esc(m.name)+'</div><button class="btn-ghost" style="color:var(--r);" onclick="removeFromCollection('+m.id+')">×</button></div>';
+    var st=matStockStatus(m);var stc=st==='ok'?'var(--gl)':st==='low'?'var(--al)':'var(--rl)';
+    html+='<div class="loc-row"><div class="fw-6 fs-13 flex-1">'+esc(m.name)+'<span style="font-size:11px;color:'+stc+';margin-left:6px;">●</span></div><button class="btn-ghost" style="color:var(--r);" onclick="removeFromCollection('+m.id+')">×</button></div>';
   });
   html+='</div>';
-  html+='<div class="card"><div class="sect-hd"><h3>Preview Link</h3></div>'+
-    '<div class="row-between mb-12"><span class="fs-13">Enable preview link</span><label class="sw"><input type="checkbox" id="cd-link-on"'+(c.previewEnabled?' checked':'')+' onchange="toggleShareLink()"><span class="sw-sl"></span></label></div>';
-  if(c.previewEnabled&&c.previewLink)html+='<div style="display:flex;gap:6px;"><input type="text" value="'+esc(c.previewLink)+'" readonly style="flex:1;"><button class="btn-sm" onclick="copyShareLink()">Copy</button></div>';
-  html+='<button class="btn-sm" style="margin-top:8px;width:100%;" onclick="openSheet(\'sh-sharelink\')">Manage link settings</button>';
+  // Share link card
+  var linkExpired=c.previewEnabled&&c.previewExpiry&&new Date(c.previewExpiry)<new Date();
+  html+='<div class="card"><div class="sect-hd"><h3>Share Link</h3><span class="chip '+(c.previewEnabled?(linkExpired?'chip-out':'chip-ok'):'chip-low')+'">'+(c.previewEnabled?(linkExpired?'Expired':'Active'):'Off')+'</span></div>';
+  if(c.previewEnabled&&c.previewLink){
+    html+='<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;"><input type="text" value="'+esc(c.previewLink)+'" readonly style="flex:1;font-size:12px;color:var(--tx2);"><button class="btn-sm" onclick="copyShareLink()">Copy</button></div>';
+    if(c.previewExpiry)html+='<div class="tx3 fs-12">Expires: '+esc(c.previewExpiry)+(linkExpired?' <strong style="color:var(--r);">(Expired)</strong>':'')+'</div>';
+  }
+  html+='<button class="btn-sm" style="margin-top:8px;width:100%;" onclick="openShareLinkSheet()">⚙ Share settings</button>';
   html+='</div>';
   el.innerHTML=html;
   pushScreen('s-cdetail');
 }
-function addProductToCollection(){showToast('Select a product from the material list','info');}
 function removeFromCollection(matId){var c=collections.find(function(x){return x.id===_editColId;});if(c)c.manualIds=c.manualIds.filter(function(i){return i!==matId;});openCDetail(_editColId);}
-function toggleShareLink(){
+function openShareLinkSheet(){
   var c=collections.find(function(x){return x.id===_editColId;});if(!c)return;
-  var on=document.getElementById('cd-link-on')&&document.getElementById('cd-link-on').checked;
-  c.previewEnabled=on;
-  if(on&&!c.previewLink)c.previewLink='https://labs.systemsbyad.com/preview/'+uuid();
-  openCDetail(_editColId);
+  var el=document.getElementById('sl-enabled');if(el)el.checked=!!c.previewEnabled;
+  var urlEl=document.getElementById('sl-url');if(urlEl)urlEl.value=c.previewLink||'';
+  var expEl=document.getElementById('sl-expiry');if(expEl)expEl.value=c.previewExpiry||'';
+  document.getElementById('sl-link-section').style.display=c.previewEnabled?'block':'none';
+  openSheet('sh-sharelink');
 }
-function copyShareLink(){var c=collections.find(function(x){return x.id===_editColId;});if(c&&c.previewLink){navigator.clipboard&&navigator.clipboard.writeText(c.previewLink);showToast('Link copied');}}
-function saveShareLink(){closeSheet('sh-sharelink');showToast('Settings saved');}
+function slToggle(){
+  var on=document.getElementById('sl-enabled').checked;
+  var c=collections.find(function(x){return x.id===_editColId;});if(!c)return;
+  if(on&&!c.previewLink)c.previewLink='https://boutiqbiz.com/preview/'+uuid();
+  document.getElementById('sl-link-section').style.display=on?'block':'none';
+  if(on){var urlEl=document.getElementById('sl-url');if(urlEl)urlEl.value=c.previewLink;}
+}
+function slRegenerate(){
+  var c=collections.find(function(x){return x.id===_editColId;});if(!c)return;
+  if(!confirm('Regenerate link? The old link will stop working.'))return;
+  c.previewLink='https://boutiqbiz.com/preview/'+uuid();
+  var urlEl=document.getElementById('sl-url');if(urlEl)urlEl.value=c.previewLink;
+  showToast('Link regenerated');
+}
+function copyShareLink(){
+  var c=collections.find(function(x){return x.id===_editColId;});
+  var link=c&&c.previewLink;if(!link)return;
+  if(navigator.clipboard)navigator.clipboard.writeText(link).then(function(){showToast('Link copied');});
+  else{var t=document.createElement('textarea');t.value=link;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);showToast('Link copied');}
+}
+function saveShareLink(){
+  var c=collections.find(function(x){return x.id===_editColId;});if(!c)return;
+  c.previewEnabled=document.getElementById('sl-enabled').checked;
+  c.previewExpiry=document.getElementById('sl-expiry').value||'';
+  if(c.previewEnabled&&!c.previewLink)c.previewLink='https://boutiqbiz.com/preview/'+uuid();
+  closeSheet('sh-sharelink');openCDetail(_editColId);showToast('Share settings saved');
+}
 
 // ===== CHANNEL LISTINGS =====
 function renderChFilterRow(){
@@ -2188,14 +2311,6 @@ function saveOptionSet(){
 }
 function deleteOptionSet(id){if(!confirm('Delete this option set?'))return;optionSets=optionSets.filter(function(o){return o.id!==id;});renderOptionSets();}
 
-// ===== COLOUR PICKER =====
-document.addEventListener('click',function(e){
-  if(e.target.classList.contains('col-swatch')){
-    var c=e.target.getAttribute('data-c');
-    document.getElementById('nc-color').value=c;
-    document.querySelectorAll('.col-swatch').forEach(function(s){s.style.border=s.getAttribute('data-c')===c?'2px solid var(--p)':'2px solid transparent';});
-  }
-});
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded',function(){
