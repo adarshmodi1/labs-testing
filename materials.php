@@ -493,13 +493,13 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
       <div class="card">
         <div class="fld"><label>Fields to print</label>
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
-            <label class="row-between" style="cursor:pointer;"><span class="fs-14">Product Name</span><input type="checkbox" id="ldes-f-name" checked onchange="ldPreview()"></label>
-            <label class="row-between" style="cursor:pointer;"><span class="fs-14">Variant / Size</span><input type="checkbox" id="ldes-f-var" checked onchange="ldPreview()"></label>
-            <label class="row-between" style="cursor:pointer;"><span class="fs-14">MRP</span><input type="checkbox" id="ldes-f-mrp" checked onchange="ldPreview()"></label>
-            <label class="row-between" style="cursor:pointer;"><span class="fs-14">Offer Price</span><input type="checkbox" id="ldes-f-offer" onchange="ldPreview()"></label>
-            <label class="row-between" style="cursor:pointer;"><span class="fs-14">SKU</span><input type="checkbox" id="ldes-f-sku" onchange="ldPreview()"></label>
-            <label class="row-between" style="cursor:pointer;"><span class="fs-14">Barcode</span><input type="checkbox" id="ldes-f-barcode" onchange="ldPreview()"></label>
-            <label class="row-between" style="cursor:pointer;"><span class="fs-14">Design No.</span><input type="checkbox" id="ldes-f-design" onchange="ldPreview()"></label>
+            <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:8px;"><span class="fs-14" style="flex:1;">Product Name</span><input type="checkbox" id="ldes-f-name" checked onchange="ldPreview()" style="flex-shrink:0;width:18px;height:18px;"></label>
+            <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:8px;"><span class="fs-14" style="flex:1;">Variant / Size</span><input type="checkbox" id="ldes-f-var" checked onchange="ldPreview()" style="flex-shrink:0;width:18px;height:18px;"></label>
+            <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:8px;"><span class="fs-14" style="flex:1;">MRP</span><input type="checkbox" id="ldes-f-mrp" checked onchange="ldPreview()" style="flex-shrink:0;width:18px;height:18px;"></label>
+            <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:8px;"><span class="fs-14" style="flex:1;">Offer Price</span><input type="checkbox" id="ldes-f-offer" onchange="ldPreview()" style="flex-shrink:0;width:18px;height:18px;"></label>
+            <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:8px;"><span class="fs-14" style="flex:1;">SKU</span><input type="checkbox" id="ldes-f-sku" onchange="ldPreview()" style="flex-shrink:0;width:18px;height:18px;"></label>
+            <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:8px;"><span class="fs-14" style="flex:1;">Barcode</span><input type="checkbox" id="ldes-f-barcode" onchange="ldPreview()" style="flex-shrink:0;width:18px;height:18px;"></label>
+            <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:8px;"><span class="fs-14" style="flex:1;">Design No.</span><input type="checkbox" id="ldes-f-design" onchange="ldPreview()" style="flex-shrink:0;width:18px;height:18px;"></label>
           </div>
         </div>
       </div>
@@ -559,7 +559,7 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <h1 id="cd-title">Collection</h1>
-    <button class="tb-act" onclick="openSheet('sh-sharelink')">Share</button>
+    <button class="tb-act" onclick="openShareLink()">Share</button>
     <button class="tb-act" onclick="editCurrentCollection()">Edit</button>
   </div>
   <div class="body" id="cdetail-body"></div>
@@ -906,64 +906,75 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
   </div>
 </div>
 
-<!-- sh-move: Record Movement -->
-<div id="sh-move" class="sh-ov" onclick="if(event.target===this)closeSheet('sh-move')">
-  <div class="sh">
-    <div class="sh-handle"></div>
-    <div class="sh-hd"><h3>Record Movement</h3></div>
-    <div class="sh-body">
+<!-- s-move: Record Movement (full screen) -->
+<div id="s-move" class="screen">
+  <div class="tb">
+    <button class="tb-bk" onclick="goBack()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h1>Record Movement</h1>
+    <button class="tb-act" onclick="saveMovement()">Save</button>
+  </div>
+  <div class="body">
+    <div class="card">
       <div class="fld"><label>Type</label>
         <select id="mv-type"><option value="Stock in">Stock In</option><option value="Stock out">Stock Out</option><option value="Transfer">Transfer</option><option value="Adjustment">Adjustment</option></select>
       </div>
       <div class="fld"><label>Quantity</label><input type="number" id="mv-qty" placeholder="0" min="0"></div>
       <div class="fld"><label>Rate (optional)</label><input type="number" id="mv-rate" placeholder="₹"></div>
       <div class="fld"><label>Reference</label><input type="text" id="mv-ref" placeholder="Invoice / order no."></div>
-      <div class="fld"><label>Note</label><textarea id="mv-note" rows="2" placeholder="Optional note"></textarea></div>
+      <div class="fld"><label>Note</label><textarea id="mv-note" rows="3" placeholder="Optional note"></textarea></div>
       <div class="fld"><label>Date</label><input type="date" id="mv-date"></div>
-      <button class="btn-p" onclick="saveMovement()">Save Movement</button>
     </div>
+    <button class="btn-p" onclick="saveMovement()">Save Movement</button>
   </div>
 </div>
 
-<!-- sh-stockcount: Stock Count -->
-<div id="sh-stockcount" class="sh-ov" onclick="if(event.target===this)closeSheet('sh-stockcount')">
-  <div class="sh">
-    <div class="sh-handle"></div>
-    <div class="sh-hd"><h3>Stock Count</h3></div>
-    <div class="sh-body">
+<!-- s-stockcount: Stock Count (full screen) -->
+<div id="s-stockcount" class="screen">
+  <div class="tb">
+    <button class="tb-bk" onclick="goBack()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h1>Stock Count</h1>
+  </div>
+  <div class="body">
+    <div class="card">
       <p class="tx2 fs-13 mb-12" id="sc-desc">Enter the actual physical quantity counted.</p>
-      <div style="text-align:center;margin:16px 0;">
+      <div style="text-align:center;margin:16px 0;padding:20px;background:var(--sf2);border-radius:12px;">
         <div class="tx3 fs-12 mb-4">System quantity</div>
-        <div style="font-size:28px;font-weight:700;" id="sc-sysqty">0</div>
+        <div style="font-size:36px;font-weight:700;" id="sc-sysqty">0</div>
       </div>
       <div class="fld"><label>Physical Count</label><input type="number" id="sc-qty" placeholder="0" oninput="updateScPreview()"></div>
-      <div id="sc-preview" style="margin:12px 0;padding:12px;border-radius:10px;background:var(--sf2);font-size:14px;text-align:center;display:none;"></div>
-      <button class="btn-p" onclick="confirmStockCount()">Confirm Count</button>
+      <div id="sc-preview" style="margin:12px 0;padding:14px;border-radius:10px;background:var(--sf2);font-size:14px;text-align:center;display:none;"></div>
     </div>
+    <button class="btn-p" onclick="confirmStockCount()">Confirm Count</button>
   </div>
 </div>
 
-<!-- sh-reserve: Add Reservation -->
-<div id="sh-reserve" class="sh-ov" onclick="if(event.target===this)closeSheet('sh-reserve')">
-  <div class="sh">
-    <div class="sh-handle"></div>
-    <div class="sh-hd"><h3>Add Reservation</h3></div>
-    <div class="sh-body">
+<!-- s-reserve: Add Reservation (full screen) -->
+<div id="s-reserve" class="screen">
+  <div class="tb">
+    <button class="tb-bk" onclick="goBack()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h1>Add Reservation</h1>
+    <button class="tb-act" onclick="saveReservation()">Save</button>
+  </div>
+  <div class="body">
+    <div class="card">
       <div class="fld"><label>Order Ref</label><input type="text" id="res-order" placeholder="Order number"></div>
       <div class="fld"><label>Customer Name</label><input type="text" id="res-customer" placeholder="Customer name"></div>
       <div class="fld"><label>Quantity</label><input type="number" id="res-qty" placeholder="0" min="1"></div>
       <div class="fld"><label>Date</label><input type="date" id="res-date"></div>
-      <button class="btn-p" onclick="saveReservation()">Add Reservation</button>
     </div>
+    <button class="btn-p" onclick="saveReservation()">Add Reservation</button>
   </div>
 </div>
 
-<!-- sh-bomline: BOM Line Editor -->
-<div id="sh-bomline" class="sh-ov" onclick="if(event.target===this)closeSheet('sh-bomline')">
-  <div class="sh">
-    <div class="sh-handle"></div>
-    <div class="sh-hd"><h3 id="bl-title">Add BOM Line</h3></div>
-    <div class="sh-body">
+<!-- s-bomline: BOM Line Editor (full screen) -->
+<div id="s-bomline" class="screen">
+  <div class="tb">
+    <button class="tb-bk" onclick="goBack()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h1 id="bl-title">Add BOM Line</h1>
+    <button class="tb-act" onclick="saveBOMLine()">Save</button>
+  </div>
+  <div class="body">
+    <div class="card">
       <div class="fld"><label>Raw Material</label>
         <select id="bl-mat" onchange="updateBlVariants()">
           <option value="">Select material…</option>
@@ -972,80 +983,96 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
       <div class="fld"><label>Variant (optional)</label>
         <select id="bl-var"><option value="">Any variant</option></select>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" class="mb-12">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         <div class="fld"><label>Quantity</label><input type="number" id="bl-qty" placeholder="0" step="0.01" min="0"></div>
         <div class="fld"><label>Unit</label>
           <select id="bl-unit"><option>metres</option><option>kg</option><option>pcs</option><option>sets</option><option>litres</option><option>grams</option><option>other</option></select>
         </div>
       </div>
       <div class="fld"><label>Note</label><input type="text" id="bl-note" placeholder="Optional note"></div>
-      <button class="btn-p" onclick="saveBOMLine()">Save Line</button>
     </div>
+    <button class="btn-p" onclick="saveBOMLine()">Save BOM Line</button>
   </div>
 </div>
 
 <!-- sh-labeldesign removed: Label design is now a full screen (s-label-design) -->
 
-<!-- sh-addlabel: Add to Label Queue -->
-<div id="sh-addlabel" class="sh-ov" onclick="if(event.target===this)closeSheet('sh-addlabel')">
-  <div class="sh">
-    <div class="sh-handle"></div>
-    <div class="sh-hd"><h3>Add to Queue</h3></div>
-    <div class="sh-body">
-      <div id="al-info" style="background:var(--sf2);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:13px;"></div>
-      <div class="fld"><label>Select Design</label><div id="al-designs" style="display:flex;flex-direction:column;gap:6px;margin-top:6px;"></div></div>
+<!-- s-addlabel: Add to Label Queue (full screen) -->
+<div id="s-addlabel" class="screen">
+  <div class="tb">
+    <button class="tb-bk" onclick="goBack()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h1>Add to Queue</h1>
+    <button class="tb-act" onclick="addToQueueConfirm()">Add</button>
+  </div>
+  <div class="body">
+    <div class="card" id="al-info-card" style="background:var(--pl);border-color:var(--pm);">
+      <div id="al-info" style="font-size:14px;font-weight:600;"></div>
+    </div>
+    <div class="card">
+      <div class="sect-hd"><h3>Select Design</h3></div>
+      <div id="al-designs" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+    <div class="card">
       <div class="fld"><label>Quantity</label>
         <div class="stepper"><button onclick="alQtyAdj(-1)">−</button><span id="al-qty">1</span><button onclick="alQtyAdj(1)">+</button></div>
       </div>
-      <button class="btn-p" onclick="addToQueueConfirm()">Add to Queue</button>
     </div>
+    <button class="btn-p" onclick="addToQueueConfirm()">Add to Queue</button>
   </div>
 </div>
 
-<!-- sh-matitem: Material/Variant Picker -->
-<div id="sh-matitem" class="sh-ov" onclick="if(event.target===this)closeSheet('sh-matitem')">
-  <div class="sh">
-    <div class="sh-handle"></div>
-    <div class="sh-hd"><h3>Select Item</h3></div>
-    <div class="sh-body">
-      <div class="fld"><input type="search" id="mi-search" placeholder="Search materials…" oninput="renderMatItemPicker()"></div>
-      <div id="mi-picker-list" style="max-height:50dvh;overflow-y:auto;"></div>
-    </div>
+<!-- s-matitem: Material/Variant Picker (full screen) -->
+<div id="s-matitem" class="screen">
+  <div class="tb">
+    <button class="tb-bk" onclick="goBack()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h1>Select Item</h1>
+  </div>
+  <div class="body">
+    <div style="padding:0 0 10px;"><input type="search" id="mi-search" placeholder="Search materials…" oninput="renderMatItemPicker()" style="width:100%;"></div>
+    <div id="mi-picker-list" style="display:flex;flex-direction:column;gap:4px;"></div>
   </div>
 </div>
 
-<!-- sh-newcol: New/Edit Collection -->
-<div id="sh-newcol" class="sh-ov" onclick="if(event.target===this)closeSheet('sh-newcol')">
-  <div class="sh">
-    <div class="sh-handle"></div>
-    <div class="sh-hd"><h3 id="nc-title">New Collection</h3></div>
-    <div class="sh-body">
+<!-- s-newcol: New/Edit Collection (full screen) -->
+<div id="s-newcol" class="screen">
+  <div class="tb">
+    <button class="tb-bk" onclick="goBack()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h1 id="nc-title">New Collection</h1>
+    <button class="tb-act" onclick="saveCollection()">Save</button>
+  </div>
+  <div class="body">
+    <div class="card">
       <div class="fld"><label>Name</label><input type="text" id="nc-name" placeholder="Collection name"></div>
-      <div class="fld"><label>Description</label><textarea id="nc-desc" rows="2" placeholder="Optional description"></textarea></div>
+      <div class="fld"><label>Description</label><textarea id="nc-desc" rows="3" placeholder="Optional description"></textarea></div>
       <div class="fld">
         <label>Visibility</label>
         <div style="display:flex;gap:8px;margin-top:6px;">
-          <button id="nc-vis-private" class="chip on" onclick="setColVisibility('private')" style="flex:1;">🔒 Private</button>
-          <button id="nc-vis-public" class="chip" onclick="setColVisibility('public')" style="flex:1;">🌐 Public</button>
+          <button id="nc-vis-private" class="chip on" onclick="setColVisibility('private')" style="flex:1;padding:10px;">🔒 Private</button>
+          <button id="nc-vis-public" class="chip" onclick="setColVisibility('public')" style="flex:1;padding:10px;">🌐 Public</button>
         </div>
         <input type="hidden" id="nc-visibility" value="private">
       </div>
-      <button class="btn-p" onclick="saveCollection()">Save Collection</button>
     </div>
+    <button class="btn-p" onclick="saveCollection()">Save Collection</button>
   </div>
 </div>
 
-<!-- sh-sharelink: Preview Link Settings -->
-<div id="sh-sharelink" class="sh-ov" onclick="if(event.target===this)closeSheet('sh-sharelink')">
-  <div class="sh">
-    <div class="sh-handle"></div>
-    <div class="sh-hd"><h3>Share Settings</h3></div>
-    <div class="sh-body">
+<!-- s-sharelink: Preview Link Settings (full screen) -->
+<div id="s-sharelink" class="screen">
+  <div class="tb">
+    <button class="tb-bk" onclick="goBack()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h1>Share Settings</h1>
+    <button class="tb-act" onclick="saveShareLink()">Save</button>
+  </div>
+  <div class="body">
+    <div class="card">
       <div class="row-between mb-12">
         <div><div class="fs-14 fw-6">Enable share link</div><div class="tx3 fs-12">Anyone with the link can view this collection</div></div>
         <label class="sw"><input type="checkbox" id="sl-enabled" onchange="slToggle()"><span class="sw-sl"></span></label>
       </div>
-      <div id="sl-link-section" style="display:none;">
+    </div>
+    <div id="sl-link-section" style="display:none;">
+      <div class="card">
         <div class="fld"><label>Share URL</label>
           <div style="display:flex;gap:6px;align-items:center;">
             <input type="text" id="sl-url" readonly style="flex:1;font-size:12px;color:var(--tx2);">
@@ -1058,35 +1085,33 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
         </div>
         <button class="btn-s" onclick="slRegenerate()" style="width:100%;margin-bottom:8px;">↻ Regenerate link</button>
       </div>
-      <button class="btn-p" onclick="saveShareLink()">Save Settings</button>
     </div>
+    <button class="btn-p" onclick="saveShareLink()">Save Settings</button>
   </div>
 </div>
 
-<!-- sh-col-product-picker: Add Products to Collection -->
-<div id="sh-col-product-picker" class="sh-ov" onclick="if(event.target===this)closeSheet('sh-col-product-picker')">
-  <div class="sh" style="max-height:85dvh;">
-    <div class="sh-handle"></div>
-    <div class="sh-hd">
-      <h3>Add Products</h3>
-      <button class="btn-sm btn-p-sm" onclick="doneAddingProducts()">Done</button>
+<!-- s-col-product-picker: Add Products to Collection (full screen) -->
+<div id="s-col-product-picker" class="screen">
+  <div class="tb">
+    <button class="tb-bk" onclick="goBack()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h1>Add Products</h1>
+    <button class="tb-act" onclick="doneAddingProducts()">Done</button>
+  </div>
+  <div class="body">
+    <input type="text" placeholder="Search by name or SKU…" oninput="colPickerSearch(this.value)" style="margin-bottom:10px;">
+    <div id="cppicker-filters" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+      <button class="chip on" data-f="all" onclick="colPickerFilter('all')">All</button>
+      <button class="chip" data-f="low" onclick="colPickerFilter('low')">Low stock</button>
+      <button class="chip" data-f="out" onclick="colPickerFilter('out')">Out of stock</button>
+      <button class="chip" data-f="finished" onclick="colPickerFilter('finished')">Finished</button>
+      <button class="chip" data-f="raw" onclick="colPickerFilter('raw')">Raw</button>
+      <button class="chip" data-f="added" onclick="colPickerFilter('added')">Already added</button>
     </div>
-    <div class="sh-body" style="padding-top:0;">
-      <input type="text" placeholder="Search by name or SKU…" oninput="colPickerSearch(this.value)" style="margin-bottom:10px;">
-      <div id="cppicker-filters" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-        <button class="chip on" data-f="all" onclick="colPickerFilter('all')">All</button>
-        <button class="chip" data-f="low" onclick="colPickerFilter('low')">Low stock</button>
-        <button class="chip" data-f="out" onclick="colPickerFilter('out')">Out of stock</button>
-        <button class="chip" data-f="finished" onclick="colPickerFilter('finished')">Finished</button>
-        <button class="chip" data-f="raw" onclick="colPickerFilter('raw')">Raw</button>
-        <button class="chip" data-f="added" onclick="colPickerFilter('added')">Already added</button>
-      </div>
-      <div id="cppicker-list" style="overflow-y:auto;max-height:52dvh;"></div>
-    </div>
+    <div id="cppicker-list" style="display:flex;flex-direction:column;gap:4px;"></div>
   </div>
 </div>
 
-<!-- sh-mat-actions: Material More Actions -->
+<!-- sh-mat-actions: Material More Actions (keep as sheet — it's a short action menu) -->
 <div id="sh-mat-actions" class="sh-ov" onclick="if(event.target===this)closeSheet('sh-mat-actions')">
   <div class="sh">
     <div class="sh-handle"></div>
@@ -1112,25 +1137,28 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
   </div>
 </div>
 
-<!-- sh-request-detail: Order Request Detail -->
-<div id="sh-request-detail" class="sh-ov" onclick="if(event.target===this)closeSheet('sh-request-detail')">
-  <div class="sh">
-    <div class="sh-handle"></div>
-    <div class="sh-hd"><h3>Order Request</h3></div>
-    <div class="sh-body" id="rd-body"></div>
+<!-- s-request-detail: Order Request Detail (full screen) -->
+<div id="s-request-detail" class="screen">
+  <div class="tb">
+    <button class="tb-bk" onclick="goBack()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h1>Order Request</h1>
   </div>
+  <div class="body" id="rd-body"></div>
 </div>
 
-<!-- sh-newset: Option Set Editor -->
-<div id="sh-newset" class="sh-ov" onclick="if(event.target===this)closeSheet('sh-newset')">
-  <div class="sh">
-    <div class="sh-handle"></div>
-    <div class="sh-hd"><h3 id="ns-title">New Option Set</h3></div>
-    <div class="sh-body">
+<!-- s-newset: Option Set Editor (full screen) -->
+<div id="s-newset" class="screen">
+  <div class="tb">
+    <button class="tb-bk" onclick="goBack()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h1 id="ns-title">New Option Set</h1>
+    <button class="tb-act" onclick="saveOptionSet()">Save</button>
+  </div>
+  <div class="body">
+    <div class="card">
       <div class="fld"><label>Name</label><input type="text" id="ns-name" placeholder="e.g. Size, Colour"></div>
-      <div class="fld"><label>Values (comma-separated)</label><input type="text" id="ns-values" placeholder="S, M, L, XL"></div>
-      <button class="btn-p" onclick="saveOptionSet()">Save</button>
+      <div class="fld"><label>Values (comma-separated)</label><input type="text" id="ns-values" placeholder="S, M, L, XL"><div class="tx3 fs-12" style="margin-top:4px;">Each value becomes a selectable option (e.g. S, M, L, XL)</div></div>
     </div>
+    <button class="btn-p" onclick="saveOptionSet()">Save Option Set</button>
   </div>
 </div>
 
@@ -1486,7 +1514,7 @@ function buildMDVariants(m){
 function buildMDSupply(m){
   var allRes=[];
   m.variants.forEach(function(v,vi){v.reservations.forEach(function(r){allRes.push(Object.assign({},r,{variantName:v.name}));});});
-  var html='<div class="card"><div class="sect-hd"><h3>Reservations</h3><button class="btn-sm" onclick="openSheet(\'sh-reserve\')">+ Add</button></div>';
+  var html='<div class="card"><div class="sect-hd"><h3>Reservations</h3><button class="btn-sm" onclick="pushScreen(\'s-reserve\')">+ Add</button></div>';
   if(!allRes.length)html+='<div class="tx3 text-center" style="padding:16px 0;">No reservations</div>';
   allRes.forEach(function(r){
     html+='<div class="loc-row"><div><div class="fw-6 fs-13">'+esc(r.customer)+'</div><div class="tx2 fs-12">'+esc(r.variantName)+' · '+esc(r.order)+'</div></div><span class="fw-6">'+r.qty+'</span></div>';
@@ -1642,7 +1670,7 @@ function buildVInventory(m,vi){
     html+='</div>';
   }
   if(v.reservations&&v.reservations.length){
-    html+='<div class="card"><div class="sect-hd"><h3>Reservations</h3><button class="btn-sm" onclick="openSheet(\'sh-reserve\')">+ Add</button></div>';
+    html+='<div class="card"><div class="sect-hd"><h3>Reservations</h3><button class="btn-sm" onclick="pushScreen(\'s-reserve\')">+ Add</button></div>';
     v.reservations.forEach(function(r){
       html+='<div class="loc-row"><div><div class="fw-6 fs-13">'+esc(r.customer)+'</div><div class="tx2 fs-12">'+esc(r.order)+'</div></div><span class="fw-6">'+r.qty+'</span></div>';
     });
@@ -1653,7 +1681,7 @@ function buildVInventory(m,vi){
 function openMoveSheet(){
   document.getElementById('mv-date').value=todayStr();
   document.getElementById('mv-qty').value='';
-  openSheet('sh-move');
+  pushScreen('s-move');
 }
 function openStockCount(){
   var m=getMat(_editMatId);var v=m&&m.variants[_editVi];if(!v)return;
@@ -1661,7 +1689,7 @@ function openStockCount(){
   document.getElementById('sc-qty').value='';
   document.getElementById('sc-preview').style.display='none';
   document.getElementById('sc-desc').textContent='Physical count for: '+v.name;
-  openSheet('sh-stockcount');
+  pushScreen('s-stockcount');
 }
 function updateScPreview(){
   var m=getMat(_editMatId);var v=m&&m.variants[_editVi];if(!v)return;
@@ -1681,7 +1709,7 @@ function confirmStockCount(){
   v.movements=v.movements||[];
   v.movements.push({date:todayStr(),type:'Adjustment',subtype:'Stock count',qty:diff,rate:0,ref:'',note:'System: '+v.qty+', Physical: '+phys});
   v.qty=phys;
-  closeSheet('sh-stockcount');
+  goBack();
   openMDetail(_mdMatId||_editMatId);
   showToast('Stock count saved');
 }
@@ -1697,14 +1725,14 @@ function saveMovement(){
     else if(type==='Stock out'||type==='Transfer')v.qty=Math.max(0,v.qty-qty);
     else if(type==='Adjustment')v.qty=Math.max(0,v.qty+qty);
   }
-  closeSheet('sh-move');setVTab(1);showToast('Movement recorded');
+  goBack();setVTab(1);showToast('Movement recorded');
 }
 function saveReservation(){
   var m=getMat(_editMatId||_mdMatId);var vi=_editVi!==null?_editVi:0;if(!m)return;
   var v=m.variants[vi];if(!v)return;
   v.reservations=v.reservations||[];
   v.reservations.push({order:document.getElementById('res-order').value,customer:document.getElementById('res-customer').value,qty:parseInt(document.getElementById('res-qty').value)||0,status:'active',date:document.getElementById('res-date').value||todayStr()});
-  closeSheet('sh-reserve');
+  goBack();
   if(_editVi!==null)setVTab(1);else setMTab(1);
   showToast('Reservation added');
 }
@@ -1761,7 +1789,7 @@ function openAddBOMLine(vi,isProduct){
     sel.innerHTML+='<option value="'+m.id+'">'+esc(m.name)+'</option>';
   });
   updateBlVariants();
-  openSheet('sh-bomline');
+  pushScreen('s-bomline');
 }
 function openEditBOMLine(blId,vi){
   openAddBOMLine(vi,false);
@@ -1786,7 +1814,7 @@ function saveBOMLine(){
   var line={id:uuid(),materialId:matId,materialName:rawMat?rawMat.name:'',variantIdx:vi!==''?parseInt(vi):null,qty:qty,unit:unit,note:note,isVariantOverride:!t.isProductLevel};
   if(t.isProductLevel){m.bom=m.bom||[];m.bom.push(line);}
   else{var v=m.variants[t.vi];v.bomOverrides=v.bomOverrides||[];line.isVariantOverride=true;v.bomOverrides.push(line);}
-  closeSheet('sh-bomline');setVTab(2);showToast('BOM line added');
+  goBack();setVTab(2);showToast('BOM line added');
 }
 function deleteBOMLine(blId,vi){
   var m=getMat(_editMatId);if(!m)return;
@@ -2090,7 +2118,7 @@ function openMatItemPicker(target,idx){
   _miItemTarget=target;_miItemIdx=idx;
   document.getElementById('mi-search').value='';
   renderMatItemPicker();
-  openSheet('sh-matitem');
+  pushScreen('s-matitem');
 }
 function renderMatItemPicker(){
   var q=(document.getElementById('mi-search')||{}).value||'';
@@ -2109,7 +2137,7 @@ function selectMatItem(matId,varIdx){
   var m=getMat(matId);var v=m&&m.variants[varIdx];if(!m||!v)return;
   var items=_miItemTarget==='in'?window._miItems:window._moItems;
   if(items&&items[_miItemIdx]){items[_miItemIdx].matId=matId;items[_miItemIdx].varIdx=varIdx;items[_miItemIdx].matName=m.name;items[_miItemIdx].varName=v.name;items[_miItemIdx].unit=m.unit;}
-  closeSheet('sh-matitem');
+  goBack();
   if(_miItemTarget==='in')renderMiItems();else renderMoItems();
 }
 
@@ -2518,7 +2546,7 @@ function openAddLabel(matId,vi){
   var dl=document.getElementById('al-designs');
   if(dl){
     if(!labelDesigns.length){
-      dl.innerHTML='<div class="tx3 fs-13">No designs yet. <button class="btn-ghost" onclick="closeSheet(\'sh-addlabel\');openLabelDesignScreen(null);">Create one</button></div>';
+      dl.innerHTML='<div class="tx3 fs-13">No designs yet. <button class="btn-ghost" onclick="goBack();openLabelDesignScreen(null);">Create one</button></div>';
     } else {
       var dhtml='';
       labelDesigns.forEach(function(d,i){
@@ -2532,7 +2560,7 @@ function openAddLabel(matId,vi){
       dl.innerHTML=dhtml;
     }
   }
-  openSheet('sh-addlabel');
+  pushScreen('s-addlabel');
 }
 function alQtyAdj(d){_alQty=Math.max(1,(_alQty||1)+d);document.getElementById('al-qty').textContent=_alQty;}
 function addToQueueConfirm(){
@@ -2541,7 +2569,7 @@ function addToQueueConfirm(){
   var dId=selEl.value;
   if(!_alMatId&&_alMatId!==0){showToast('No variant selected','error');return;}
   labelQueue.push({matId:_alMatId,varIdx:_alVi,designId:dId,qty:_alQty||1});
-  closeSheet('sh-addlabel');
+  goBack();
   showToast('Added '+(_alQty||1)+' labels to queue');
   // Update queue tab label
   var qtab=document.getElementById('l-tab-queue');
@@ -2605,7 +2633,7 @@ function openNewCollection(){
   document.getElementById('nc-name').value='';
   document.getElementById('nc-desc').value='';
   setColVisibility('private');
-  openSheet('sh-newcol');
+  pushScreen('s-newcol');
 }
 function editCurrentCollection(){
   if(!_editColId)return;
@@ -2614,7 +2642,7 @@ function editCurrentCollection(){
   document.getElementById('nc-name').value=c.name;
   document.getElementById('nc-desc').value=c.desc||'';
   setColVisibility(c.visibility||'private');
-  openSheet('sh-newcol');
+  pushScreen('s-newcol');
 }
 function saveCollection(){
   var nm=document.getElementById('nc-name').value.trim();if(!nm){showToast('Enter collection name','error');return;}
@@ -2626,14 +2654,14 @@ function saveCollection(){
   } else {
     collections.push({id:nextId(collections),name:nm,desc:desc,visibility:visibility,tagRules:[],manualIds:[],previewLink:'',previewEnabled:false,previewExpiry:''});
   }
-  closeSheet('sh-newcol');renderCollections();showToast('Collection saved');
+  goBack();renderCollections();showToast('Collection saved');
 }
 // Product picker state
 var _colPickerSearch='';var _colPickerFilter='all';
 function openAddProductPicker(){
   _colPickerSearch='';_colPickerFilter='all';
   renderColProductPicker();
-  openSheet('sh-col-product-picker');
+  pushScreen('s-col-product-picker');
 }
 function renderColProductPicker(){
   var search=_colPickerSearch.toLowerCase();
@@ -2670,7 +2698,7 @@ function toggleColProduct(matId){
   if(idx>=0)c.manualIds.splice(idx,1);else c.manualIds.push(matId);
   renderColProductPicker();
 }
-function doneAddingProducts(){closeSheet('sh-col-product-picker');openCDetail(_editColId);}
+function doneAddingProducts(){goBack();}
 function openCDetail(id){
   _editColId=id;
   var c=collections.find(function(x){return x.id===id;});if(!c)return;
@@ -2697,13 +2725,13 @@ function openCDetail(id){
   pushScreen('s-cdetail');
 }
 function removeFromCollection(matId){var c=collections.find(function(x){return x.id===_editColId;});if(c)c.manualIds=c.manualIds.filter(function(i){return i!==matId;});openCDetail(_editColId);}
-function openShareLinkSheet(){
+function openShareLink(){
   var c=collections.find(function(x){return x.id===_editColId;});if(!c)return;
   var el=document.getElementById('sl-enabled');if(el)el.checked=!!c.previewEnabled;
   var urlEl=document.getElementById('sl-url');if(urlEl)urlEl.value=c.previewLink||'';
   var expEl=document.getElementById('sl-expiry');if(expEl)expEl.value=c.previewExpiry||'';
   document.getElementById('sl-link-section').style.display=c.previewEnabled?'block':'none';
-  openSheet('sh-sharelink');
+  pushScreen('s-sharelink');
 }
 function slToggle(){
   var on=document.getElementById('sl-enabled').checked;
@@ -2730,7 +2758,7 @@ function saveShareLink(){
   c.previewEnabled=document.getElementById('sl-enabled').checked;
   c.previewExpiry=document.getElementById('sl-expiry').value||'';
   if(c.previewEnabled&&!c.previewLink)c.previewLink='https://boutiqbiz.com/preview/'+uuid();
-  closeSheet('sh-sharelink');openCDetail(_editColId);showToast('Share settings saved');
+  goBack();showToast('Share settings saved');
 }
 
 // ===== CHANNEL LISTINGS =====
@@ -2904,11 +2932,11 @@ function openRequestDetail(id){
     html+='<button class="btn-p" onclick="updateReqStatus('+r.id+',\'converted\')">Convert to Order</button>';
   }
   document.getElementById('rd-body').innerHTML=html;
-  openSheet('sh-request-detail');
+  pushScreen('s-request-detail');
 }
 function updateReqStatus(id,status){
   var r=orderRequests.find(function(x){return x.id===id;});if(r)r.status=status;
-  closeSheet('sh-request-detail');renderOrderRequests('');showToast('Status updated');
+  goBack();renderOrderRequests('');showToast('Status updated');
 }
 
 // ===== SETTINGS =====
@@ -2921,14 +2949,14 @@ function renderOptionSets(){
   });
   el.innerHTML=html;
 }
-function openNewOptionSet(){_editListingId=null;document.getElementById('ns-title').textContent='New Option Set';document.getElementById('ns-name').value='';document.getElementById('ns-values').value='';openSheet('sh-newset');}
-function openEditOptionSet(id){var os=optionSets.find(function(o){return o.id===id;});if(!os)return;window._editOsId=id;document.getElementById('ns-title').textContent='Edit Option Set';document.getElementById('ns-name').value=os.name;document.getElementById('ns-values').value=os.values.join(', ');openSheet('sh-newset');}
+function openNewOptionSet(){_editListingId=null;document.getElementById('ns-title').textContent='New Option Set';document.getElementById('ns-name').value='';document.getElementById('ns-values').value='';pushScreen('s-newset');}
+function openEditOptionSet(id){var os=optionSets.find(function(o){return o.id===id;});if(!os)return;window._editOsId=id;document.getElementById('ns-title').textContent='Edit Option Set';document.getElementById('ns-name').value=os.name;document.getElementById('ns-values').value=os.values.join(', ');pushScreen('s-newset');}
 function saveOptionSet(){
   var nm=document.getElementById('ns-name').value.trim();if(!nm){showToast('Enter name','error');return;}
   var vals=document.getElementById('ns-values').value.split(',').map(function(v){return v.trim();}).filter(Boolean);
   if(window._editOsId){var os=optionSets.find(function(o){return o.id===window._editOsId;});if(os){os.name=nm;os.values=vals;}}
   else optionSets.push({id:'os-'+uuid(),name:nm,values:vals});
-  window._editOsId=null;closeSheet('sh-newset');renderOptionSets();showToast('Saved');
+  window._editOsId=null;goBack();renderOptionSets();showToast('Saved');
 }
 function deleteOptionSet(id){if(!confirm('Delete this option set?'))return;optionSets=optionSets.filter(function(o){return o.id!==id;});renderOptionSets();}
 
