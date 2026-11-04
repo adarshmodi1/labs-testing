@@ -88,7 +88,7 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
 .row-between{display:flex;align-items:center;justify-content:space-between;}
 .gap-4{gap:4px;}.gap-8{gap:8px;}.gap-12{gap:12px;}
 .mb-4{margin-bottom:4px;}.mb-8{margin-bottom:8px;}.mb-12{margin-bottom:12px;}
-.fw-6{font-weight:600;}.fs-12{font-size:12px;}.fs-13{font-size:13px;}.fs-15{font-size:15px;}.fs-16{font-size:16px;}
+.fw-6{font-weight:600;}.fw-600{font-weight:600;}.fs-11{font-size:11px;}.fs-12{font-size:12px;}.fs-13{font-size:13px;}.fs-14{font-size:14px;}.fs-15{font-size:15px;}.fs-16{font-size:16px;}
 .tx2{color:var(--tx2);}.tx3{color:var(--tx3);}
 .text-center{text-align:center;}
 .flex-1{flex:1;}
@@ -608,7 +608,7 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
   <div id="or-body" style="flex:1;"></div>
 </div>
 
-<!-- s-sync: Sync Inventory -->
+<!-- s-sync: Sync Inventory (3 tabs) -->
 <div id="s-sync" class="screen">
   <div class="tb">
     <button class="tb-bk" onclick="openSheet('sh-nav')">
@@ -616,18 +616,80 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
     </button>
     <h1>Sync Inventory</h1>
   </div>
+  <div class="tab-strip">
+    <div class="tab-inner">
+      <button class="tab on" onclick="setSyncTab(0)">Stock Count</button>
+      <button class="tab" onclick="setSyncTab(1)">Transfers</button>
+      <button class="tab" onclick="setSyncTab(2)">Import / Export</button>
+    </div>
+  </div>
+  <div id="sync-body" style="flex:1;"></div>
+</div>
+
+<!-- s-sync-count-review: Review stock count discrepancies -->
+<div id="s-sync-count-review" class="screen">
+  <div class="tb">
+    <button class="tb-bk" onclick="goBack()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <h1>Review Discrepancies</h1>
+    <button class="tb-act" onclick="applyStockCount()">Apply All</button>
+  </div>
+  <div id="sync-review-body" class="body"></div>
+</div>
+
+<!-- s-transfer: Record Stock Transfer -->
+<div id="s-transfer" class="screen">
+  <div class="tb">
+    <button class="tb-bk" onclick="goBack()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <h1 id="s-transfer-title">New Transfer</h1>
+    <button class="tb-act" onclick="saveTransfer()">Save</button>
+  </div>
   <div class="body">
     <div class="card">
-      <div class="sect-hd"><h3>CSV Import / Export</h3></div>
-      <button class="btn-s" style="margin-bottom:10px;" onclick="showToast('Template downloaded','info')">⬇ Download CSV Template</button>
-      <div class="fld"><label>Upload CSV</label><input type="file" accept=".csv"></div>
-      <button class="btn-p" onclick="showToast('Preview coming soon','info')">Preview & Apply</button>
+      <div class="fld">
+        <label>Reference / Note</label>
+        <input type="text" id="xfer-ref" placeholder="e.g. VB Kolkata → Asansol, Oct batch">
+      </div>
+      <div class="fld">
+        <label>Date</label>
+        <input type="date" id="xfer-date">
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:12px;">
+        <div class="fld" style="flex:1;margin-bottom:0;">
+          <label>From Location</label>
+          <select id="xfer-from">
+            <option value="">Select...</option>
+            <option>VB Asansol</option>
+            <option>VB Durgapur</option>
+            <option>VB Kolkata</option>
+            <option>Warehouse</option>
+            <option>Production Unit</option>
+          </select>
+        </div>
+        <div class="fld" style="flex:1;margin-bottom:0;">
+          <label>To Location</label>
+          <select id="xfer-to">
+            <option value="">Select...</option>
+            <option>VB Asansol</option>
+            <option>VB Durgapur</option>
+            <option>VB Kolkata</option>
+            <option>Warehouse</option>
+            <option>Production Unit</option>
+          </select>
+        </div>
+      </div>
     </div>
     <div class="card">
-      <div class="sect-hd"><h3>Shopify Sync</h3></div>
-      <p style="color:var(--tx2);font-size:13px;margin-bottom:12px;">Connect your Shopify store to sync inventory levels automatically.</p>
-      <button class="btn-p" onclick="showToast('Connect Shopify — coming soon','info')">Connect Shopify</button>
+      <div class="sect-hd">
+        <h3>Items</h3>
+        <button class="btn-sm" onclick="addTransferLine()">+ Add Item</button>
+      </div>
+      <div id="xfer-lines"></div>
     </div>
+    <button class="btn-p" onclick="saveTransfer()">Save Transfer</button>
   </div>
 </div>
 
@@ -1300,6 +1362,7 @@ function navTo(id){
   else if(id==='s-order-requests')renderOrderRequests('');
   else if(id==='s-labels')renderLabels();
   else if(id==='s-catalog')renderCatalog();
+  else if(id==='s-sync'){setSyncTab(0);}
   else if(id==='s-settings')renderOptionSets();
   showScreen(id);
 }
@@ -3328,6 +3391,369 @@ function renderCatalogOutput(){
 }
 function catPushToShopify(){
   showToast('Shopify push — connect Shopify in Settings to enable','info');
+}
+
+// ===== SYNC INVENTORY =====
+var _syncTab=0;
+var stockTransfers=[];
+var _editXferId=null;
+var _syncCountRows=[];// {matId,varIdx,systemQty,countedQty}
+
+function setSyncTab(n){
+  _syncTab=n;
+  document.querySelectorAll('#s-sync .tab').forEach(function(t,i){t.classList.toggle('on',i===n);});
+  var b=document.getElementById('sync-body');
+  if(n===0) renderSyncStockCount(b);
+  else if(n===1) renderSyncTransfers(b);
+  else renderSyncImportExport(b);
+}
+
+/* ---- Tab 0: Stock Count ---- */
+function renderSyncStockCount(b){
+  var rows='';
+  materials.forEach(function(m){
+    m.variants.forEach(function(v,vi){
+      rows+='<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--br);">'
+        +'<div style="flex:1;min-width:0;">'
+        +'<div class="fs-14 fw-600" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+m.name+'</div>'
+        +'<div class="fs-12 tx2">'+v.name+'</div>'
+        +'</div>'
+        +'<div style="text-align:right;min-width:60px;">'
+        +'<div class="fs-12 tx2">System</div>'
+        +'<div class="fs-14 fw-600">'+v.qty+'</div>'
+        +'</div>'
+        +'<div style="min-width:72px;">'
+        +'<input type="number" min="0" placeholder="Count" style="width:72px;text-align:center;padding:6px 8px;font-size:14px;" '
+        +'id="sc-'+m.id+'-'+vi+'" value="" oninput="scMark(this)">'
+        +'</div>'
+        +'</div>';
+    });
+  });
+  if(!rows) rows='<p style="color:var(--tx2);font-size:13px;padding:20px 0;text-align:center;">No materials yet.</p>';
+  b.innerHTML='<div class="body">'
+    +'<div class="card" style="padding:12px 16px;">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">'
+    +'<h3 style="font-size:15px;font-weight:600;">Enter Physical Count</h3>'
+    +'<span class="fs-12 tx2">Leave blank to skip</span>'
+    +'</div>'
+    +'<p style="font-size:13px;color:var(--tx2);margin-bottom:14px;">Enter the actual quantity you have on hand. We\'ll show you what\'s different before applying.</p>'
+    +rows
+    +'</div>'
+    +'<button class="btn-p" id="sc-review-btn" onclick="openSyncCountReview()" style="opacity:.4;pointer-events:none;">Review Discrepancies</button>'
+    +'</div>';
+}
+
+function scMark(inp){
+  // Enable review button once at least one value entered
+  var btn=document.getElementById('sc-review-btn');
+  if(btn){
+    var any=false;
+    document.querySelectorAll('[id^="sc-"]').forEach(function(i){if(i.id!=='sc-review-btn'&&i.value!=='')any=true;});
+    btn.style.opacity=any?'1':'0.4';
+    btn.style.pointerEvents=any?'auto':'none';
+  }
+}
+
+function openSyncCountReview(){
+  _syncCountRows=[];
+  materials.forEach(function(m){
+    m.variants.forEach(function(v,vi){
+      var inp=document.getElementById('sc-'+m.id+'-'+vi);
+      if(inp&&inp.value!==''){
+        var counted=parseInt(inp.value,10)||0;
+        if(counted!==v.qty){
+          _syncCountRows.push({matId:m.id,varIdx:vi,matName:m.name,varName:v.name,systemQty:v.qty,countedQty:counted});
+        }
+      }
+    });
+  });
+  if(_syncCountRows.length===0){showToast('No discrepancies found — counts match system','ok');return;}
+  renderSyncCountReview();
+  pushScreen('s-sync-count-review');
+}
+
+function renderSyncCountReview(){
+  var rows='';
+  _syncCountRows.forEach(function(r,i){
+    var diff=r.countedQty-r.systemQty;
+    var diffStr=(diff>0?'+':'')+diff;
+    var diffColor=diff>0?'var(--g)':diff<0?'var(--r)':'var(--tx2)';
+    rows+='<div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--br);">'
+      +'<div style="flex:1;min-width:0;">'
+      +'<div class="fs-14 fw-600">'+r.matName+'</div>'
+      +'<div class="fs-12 tx2">'+r.varName+'</div>'
+      +'</div>'
+      +'<div style="text-align:center;min-width:52px;">'
+      +'<div class="fs-11 tx2">System</div><div class="fs-14">'+r.systemQty+'</div>'
+      +'</div>'
+      +'<div style="font-size:18px;color:var(--tx3);">→</div>'
+      +'<div style="text-align:center;min-width:52px;">'
+      +'<div class="fs-11 tx2">Counted</div><div class="fs-14 fw-600">'+r.countedQty+'</div>'
+      +'</div>'
+      +'<div style="min-width:40px;text-align:right;font-size:14px;font-weight:700;color:'+diffColor+';">'+diffStr+'</div>'
+      +'<input type="checkbox" id="scr-'+i+'" checked style="width:18px;height:18px;flex-shrink:0;">'
+      +'</div>';
+  });
+  document.getElementById('sync-review-body').innerHTML=
+    '<div class="card" style="padding:12px 16px;">'
+    +'<p style="font-size:13px;color:var(--tx2);margin-bottom:12px;">'+_syncCountRows.length+' discrepanc'+(  _syncCountRows.length===1?'y':'ies')+' found. Uncheck any you don\'t want to apply.</p>'
+    +rows
+    +'</div>'
+    +'<button class="btn-p" onclick="applyStockCount()">Apply Selected</button>';
+}
+
+function applyStockCount(){
+  var applied=0;
+  _syncCountRows.forEach(function(r,i){
+    var chk=document.getElementById('scr-'+i);
+    if(chk&&chk.checked){
+      var m=materials.find(function(x){return x.id===r.matId;});
+      if(m&&m.variants[r.varIdx]){
+        var old=m.variants[r.varIdx].qty;
+        m.variants[r.varIdx].qty=r.countedQty;
+        m.variants[r.varIdx].movements=m.variants[r.varIdx].movements||[];
+        m.variants[r.varIdx].movements.unshift({
+          date:new Date().toISOString().slice(0,10),
+          type:'adjustment',subtype:'stock-count',
+          qty:r.countedQty-old,rate:0,ref:'Stock Count',note:'Applied via Sync'
+        });
+        applied++;
+      }
+    }
+  });
+  showToast(applied+' variant'+(applied===1?'':'s')+' updated','ok');
+  goBack();
+  setSyncTab(0);
+}
+
+/* ---- Tab 1: Transfers ---- */
+function renderSyncTransfers(b){
+  var rows='';
+  stockTransfers.slice().reverse().forEach(function(t){
+    var items=t.lines.length+' item'+(t.lines.length===1?'':'s');
+    rows+='<div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--br);cursor:pointer;" onclick="openTransfer(\''+t.id+'\')">'
+      +'<div style="width:38px;height:38px;border-radius:10px;background:var(--bl);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+      +'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--b)" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>'
+      +'</div>'
+      +'<div style="flex:1;min-width:0;">'
+      +'<div class="fs-14 fw-600" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(t.ref||'Transfer')+'</div>'
+      +'<div class="fs-12 tx2">'+t.from+' → '+t.to+' · '+items+'</div>'
+      +'</div>'
+      +'<div style="text-align:right;flex-shrink:0;">'
+      +'<div class="fs-12 tx2">'+t.date+'</div>'
+      +'</div>'
+      +'</div>';
+  });
+  if(!rows) rows='<div style="text-align:center;padding:32px 0;color:var(--tx2);">'
+    +'<div style="font-size:32px;margin-bottom:8px;">📦</div>'
+    +'<div class="fs-14">No transfers recorded yet</div>'
+    +'</div>';
+  b.innerHTML='<div class="body">'
+    +'<button class="btn-p" onclick="openTransfer(null)" style="margin-bottom:4px;">+ New Transfer</button>'
+    +'<div class="card" style="padding:0 16px;">'+rows+'</div>'
+    +'</div>';
+}
+
+function openTransfer(id){
+  _editXferId=id;
+  if(id){
+    var t=stockTransfers.find(function(x){return x.id===id;});
+    if(!t) return;
+    document.getElementById('s-transfer-title').textContent='Transfer Details';
+    document.getElementById('xfer-ref').value=t.ref||'';
+    document.getElementById('xfer-date').value=t.date||'';
+    document.getElementById('xfer-from').value=t.from||'';
+    document.getElementById('xfer-to').value=t.to||'';
+    renderXferLines(t.lines||[]);
+  } else {
+    document.getElementById('s-transfer-title').textContent='New Transfer';
+    document.getElementById('xfer-ref').value='';
+    document.getElementById('xfer-date').value=new Date().toISOString().slice(0,10);
+    document.getElementById('xfer-from').value='';
+    document.getElementById('xfer-to').value='';
+    renderXferLines([]);
+  }
+  pushScreen('s-transfer');
+}
+
+var _xferLines=[];
+function renderXferLines(lines){
+  _xferLines=lines.map(function(l){return Object.assign({},l);});
+  _redrawXferLines();
+}
+function _redrawXferLines(){
+  var c=document.getElementById('xfer-lines');
+  if(!c) return;
+  var html='';
+  _xferLines.forEach(function(l,i){
+    html+='<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--br);">'
+      +'<div style="flex:1;min-width:0;">'
+      +'<input type="text" placeholder="Material / variant" value="'+(l.name||'')+'" style="margin-bottom:6px;" oninput="_xferLines['+i+'].name=this.value">'
+      +'</div>'
+      +'<div style="width:70px;flex-shrink:0;">'
+      +'<input type="number" min="0" placeholder="Qty" value="'+(l.qty||'')+'" style="text-align:center;" oninput="_xferLines['+i+'].qty=parseInt(this.value)||0">'
+      +'</div>'
+      +'<button class="btn-icon" onclick="_xferLines.splice('+i+',1);_redrawXferLines();">'
+      +'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--r)" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+      +'</button>'
+      +'</div>';
+  });
+  if(!_xferLines.length) html='<p style="font-size:13px;color:var(--tx2);padding:12px 0;">No items added yet.</p>';
+  c.innerHTML=html;
+}
+function addTransferLine(){
+  _xferLines.push({name:'',qty:0});
+  _redrawXferLines();
+}
+function saveTransfer(){
+  var ref=document.getElementById('xfer-ref').value.trim();
+  var date=document.getElementById('xfer-date').value;
+  var from=document.getElementById('xfer-from').value;
+  var to=document.getElementById('xfer-to').value;
+  if(!from||!to){showToast('Select From and To locations','warn');return;}
+  if(from===to){showToast('From and To must be different','warn');return;}
+  var lines=_xferLines.filter(function(l){return l.name&&l.qty>0;});
+  if(!lines.length){showToast('Add at least one item','warn');return;}
+  if(_editXferId){
+    var t=stockTransfers.find(function(x){return x.id===_editXferId;});
+    if(t){t.ref=ref;t.date=date;t.from=from;t.to=to;t.lines=lines;}
+    showToast('Transfer updated','ok');
+  } else {
+    stockTransfers.push({id:'xf'+Date.now(),ref:ref,date:date,from:from,to:to,lines:lines,createdAt:Date.now()});
+    showToast('Transfer recorded','ok');
+  }
+  goBack();
+  setSyncTab(1);
+}
+
+/* ---- Tab 2: Import / Export ---- */
+function renderSyncImportExport(b){
+  b.innerHTML='<div class="body">'
+    +'<div class="card">'
+    +'<div class="sect-hd"><h3>Export Stock</h3></div>'
+    +'<p style="font-size:13px;color:var(--tx2);margin-bottom:14px;">Download your current inventory as a CSV — material name, variant, SKU, qty, MRP.</p>'
+    +'<button class="btn-p" onclick="exportStockCSV()">⬇ Export Stock CSV</button>'
+    +'</div>'
+    +'<div class="card">'
+    +'<div class="sect-hd"><h3>Import / Bulk Update</h3></div>'
+    +'<p style="font-size:13px;color:var(--tx2);margin-bottom:14px;">Upload a CSV with updated quantities. Required columns: <strong>SKU</strong>, <strong>Qty</strong>. All other columns are ignored.</p>'
+    +'<button class="btn-s" style="margin-bottom:10px;width:100%;" onclick="downloadSyncTemplate()">⬇ Download Template CSV</button>'
+    +'<div class="fld"><label>Upload CSV</label><input type="file" accept=".csv" id="sync-csv-upload" onchange="previewSyncCSV(this)"></div>'
+    +'<div id="sync-csv-preview"></div>'
+    +'</div>'
+    +'<div class="card">'
+    +'<div class="sect-hd"><h3>Shopify Sync</h3></div>'
+    +'<div style="display:flex;align-items:center;gap:10px;padding:10px 0;background:var(--al);border-radius:10px;padding:12px;">'
+    +'<div style="font-size:22px;">🔗</div>'
+    +'<div style="flex:1;"><div class="fs-14 fw-600" style="color:var(--at);">Not connected</div><div class="fs-12 tx2">Connect your Shopify store to push/pull inventory levels automatically.</div></div>'
+    +'</div>'
+    +'<button class="btn-p" style="margin-top:12px;" onclick="showToast(\'Shopify connection coming in next build\',\'info\')">Connect Shopify Store</button>'
+    +'</div>'
+    +'</div>';
+}
+
+function exportStockCSV(){
+  var rows=[['Material','Variant','SKU','Qty','MRP','Unit']];
+  materials.forEach(function(m){
+    m.variants.forEach(function(v){
+      rows.push([m.name,v.name,v.sku||'',v.qty,v.mrp||'',m.unit||'pcs']);
+    });
+  });
+  var csv=rows.map(function(r){return r.map(function(c){return '"'+(c+'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var blob=new Blob([csv],{type:'text/csv'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='boutiqbiz_stock_'+(new Date().toISOString().slice(0,10))+'.csv';
+  a.click();
+  showToast('Stock CSV downloaded','ok');
+}
+
+function downloadSyncTemplate(){
+  var csv='"SKU","Qty"\n"VB-001-BLK-S","12"\n"VB-001-BLK-M","8"';
+  var blob=new Blob([csv],{type:'text/csv'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='boutiqbiz_import_template.csv';
+  a.click();
+}
+
+function previewSyncCSV(input){
+  var file=input.files[0];
+  if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var lines=e.target.result.trim().split('\n');
+    var headers=lines[0].split(',').map(function(h){return h.replace(/"/g,'').trim().toLowerCase();});
+    var skuIdx=headers.indexOf('sku');
+    var qtyIdx=headers.indexOf('qty');
+    if(skuIdx<0||qtyIdx<0){
+      document.getElementById('sync-csv-preview').innerHTML='<div style="background:var(--rl);border-radius:10px;padding:12px;margin-top:10px;font-size:13px;color:var(--rt);">CSV must have SKU and Qty columns.</div>';
+      return;
+    }
+    var updates=[];
+    var notFound=[];
+    for(var i=1;i<lines.length;i++){
+      if(!lines[i].trim()) continue;
+      var cols=lines[i].split(',').map(function(c){return c.replace(/"/g,'').trim();});
+      var sku=cols[skuIdx];
+      var qty=parseInt(cols[qtyIdx],10);
+      if(!sku||isNaN(qty)) continue;
+      var found=false;
+      materials.forEach(function(m){
+        m.variants.forEach(function(v,vi){
+          if((v.sku||'').toLowerCase()===sku.toLowerCase()){
+            updates.push({matName:m.name,varName:v.name,sku:sku,oldQty:v.qty,newQty:qty,matId:m.id,varIdx:vi});
+            found=true;
+          }
+        });
+      });
+      if(!found) notFound.push(sku);
+    }
+    var html='<div style="margin-top:12px;">';
+    if(updates.length){
+      html+='<div class="fs-13 fw-600" style="margin-bottom:8px;">'+updates.length+' match'+(updates.length===1?'':'es')+' found:</div>';
+      updates.forEach(function(u){
+        var diff=u.newQty-u.oldQty;
+        html+='<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--br);font-size:13px;">'
+          +'<span>'+u.matName+' · '+u.varName+'</span>'
+          +'<span style="color:'+(diff>0?'var(--g)':diff<0?'var(--r)':'var(--tx2)')+';">'+u.oldQty+' → '+u.newQty+'</span>'
+          +'</div>';
+      });
+      html+='<button class="btn-p" style="margin-top:12px;" onclick="applySyncCSV()">Apply '+updates.length+' Update'+(updates.length===1?'':'s')+'</button>';
+    }
+    if(notFound.length){
+      html+='<div style="margin-top:10px;background:var(--al);border-radius:8px;padding:10px;font-size:12px;color:var(--at);">SKUs not found: '+notFound.join(', ')+'</div>';
+    }
+    if(!updates.length&&!notFound.length){
+      html+='<p style="color:var(--tx2);font-size:13px;">No valid rows found in CSV.</p>';
+    }
+    html+='</div>';
+    document.getElementById('sync-csv-preview').innerHTML=html;
+    window._syncCSVUpdates=updates;
+  };
+  reader.readAsText(file);
+}
+
+function applySyncCSV(){
+  var updates=window._syncCSVUpdates||[];
+  var applied=0;
+  updates.forEach(function(u){
+    var m=materials.find(function(x){return x.id===u.matId;});
+    if(m&&m.variants[u.varIdx]){
+      m.variants[u.varIdx].qty=u.newQty;
+      m.variants[u.varIdx].movements=m.variants[u.varIdx].movements||[];
+      m.variants[u.varIdx].movements.unshift({
+        date:new Date().toISOString().slice(0,10),
+        type:'adjustment',subtype:'csv-import',
+        qty:u.newQty-u.oldQty,rate:0,ref:'CSV Import',note:'Bulk import via Sync'
+      });
+      applied++;
+    }
+  });
+  document.getElementById('sync-csv-preview').innerHTML='';
+  var fi=document.getElementById('sync-csv-upload');
+  if(fi) fi.value='';
+  showToast(applied+' variant'+(applied===1?'':'s')+' updated','ok');
 }
 
 // ===== INIT =====
