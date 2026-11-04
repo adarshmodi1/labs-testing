@@ -1658,7 +1658,17 @@ function saveVDetail(){
     v.mrp=parseFloat(mrpEl.value)||0;
     v.offer=parseFloat((document.getElementById('vp-offer')||{}).value)||0;
     v.cost=parseFloat((document.getElementById('vp-cost')||{}).value)||0;
-    v.barcode=(document.getElementById('vp-barcode')||{}).value||v.barcode;
+    var barcodeEl=document.getElementById('vp-barcode');
+    var newBarcode=(barcodeEl?barcodeEl.value.trim():'');
+    // Duplicate barcode check before saving
+    if(newBarcode){
+      var conflict=checkBarcodeConflict(newBarcode,_editMatId,_editVi);
+      if(conflict){
+        var ok=confirm('⚠ This barcode is already used by:\n'+conflict.matName+' · '+conflict.varName+'\n\nSave anyway and use this barcode on both?');
+        if(!ok) return;
+      }
+    }
+    v.barcode=newBarcode;
   }
   showToast('Variant saved');
 }
@@ -1674,12 +1684,15 @@ function buildVPricing(m,vi){
     '<div class="row-between"><span class="tx2 fs-13">Margin</span><span class="fw-6 fs-13" id="vp-margin">'+margin+'%</span></div>'+
     '</div>'+
     '<div class="card">'+
-    '<div class="sect-hd"><h3>Barcode</h3></div>'+
-    '<div class="fld"><label>Barcode value</label><input type="text" id="vp-barcode" value="'+esc(v.barcode)+'" placeholder="Enter or scan barcode" oninput="vpBarcodePreview()"></div>'+
-    '<div id="vp-barcode-preview" style="margin:4px 0 10px;display:flex;justify-content:center;">'+(v.barcode?'<div style="background:#fff;border:1px solid var(--br);border-radius:6px;padding:6px 10px;">'+C128.svg(v.barcode,180,40)+'<div style="font-size:9px;color:#999;text-align:center;margin-top:2px;font-family:monospace;">'+esc(v.barcode)+'</div></div>':'<div class="tx3 fs-12">Enter a barcode value to preview</div>')+'</div>'+
-    '<div style="display:flex;gap:8px;">'+
-    '<button class="btn-sm" onclick="setBarToSku()">Set to SKU</button>'+
-    '<button class="btn-sm btn-p-sm" onclick="openAddLabel('+m.id+','+vi+')">🏷 Print Label</button>'+
+    '<div class="sect-hd"><h3>Barcode</h3>'+(v.barcode?'':'<span class="chip chip-r" style="font-size:11px;">Not assigned</span>')+'</div>'+
+    '<div class="fld"><label>Barcode number</label><input type="text" id="vp-barcode" value="'+esc(v.barcode)+'" placeholder="Enter, scan, or generate a barcode" oninput="vpBarcodePreview()" style="font-family:monospace;letter-spacing:.5px;"></div>'+
+    '<div id="vp-barcode-preview" style="margin:4px 0 10px;">'+(v.barcode
+      ?'<div style="background:#fff;border:1px solid var(--br);border-radius:6px;padding:6px 10px;text-align:center;">'+C128.svg(v.barcode,200,44)+'<div style="font-size:9px;color:#999;margin-top:2px;font-family:monospace;">'+esc(v.barcode)+'</div></div>'
+      :'<div class="tx3 fs-12" style="padding:8px 0;">No barcode — product can still be saved without one.</div>')+'</div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
+    '<button class="btn-sm" style="background:var(--gl);color:var(--gt);font-weight:600;" onclick="vpGenerateBarcode()">✦ Generate Barcode</button>'+
+    '<button class="btn-sm" onclick="setBarToSku()">Use SKU as Barcode</button>'+
+    '<button class="btn-sm" onclick="openAddLabel('+m.id+','+vi+')">🏷 Print Label</button>'+
     '</div></div>';
 }
 function vCalcDisc(){
@@ -1699,13 +1712,72 @@ function setBarToSku(){
   var m=getMat(_editMatId);var v=m&&m.variants[_editVi];if(!v)return;
   var el=document.getElementById('vp-barcode');if(el){el.value=v.sku;vpBarcodePreview();}
 }
+
+// Check if a barcode value is already used anywhere else in the system
+// Returns {matName, varName} of the conflicting record, or null if clear
+function checkBarcodeConflict(val,excludeMatId,excludeVarIdx){
+  if(!val) return null;
+  var v2=val.trim().toLowerCase();
+  for(var i=0;i<materials.length;i++){
+    var mat=materials[i];
+    for(var j=0;j<mat.variants.length;j++){
+      if(mat.id===excludeMatId&&j===excludeVarIdx) continue;// skip self
+      var bc=(mat.variants[j].barcode||'').trim().toLowerCase();
+      if(bc&&bc===v2) return{matName:mat.name,varName:mat.variants[j].name};
+    }
+  }
+  return null;
+}
+
+// Generate a unique random 13-digit barcode (EAN-13 format with valid check digit)
+function generateUniqueBarcode(){
+  var attempt=0;
+  while(attempt<20){
+    // 12 random digits (prefix 890 = India GS1 range, then 9 random digits)
+    var base='890';
+    for(var i=0;i<9;i++) base+=Math.floor(Math.random()*10);
+    // EAN-13 check digit
+    var sum=0;
+    for(var k=0;k<12;k++) sum+=parseInt(base[k])*(k%2===0?1:3);
+    var check=(10-(sum%10))%10;
+    var full=base+check;
+    if(!checkBarcodeConflict(full,_editMatId,_editVi)) return full;
+    attempt++;
+  }
+  return null;
+}
+
+function vpGenerateBarcode(){
+  var code=generateUniqueBarcode();
+  if(!code){showToast('Could not generate a unique barcode — try again','error');return;}
+  var el=document.getElementById('vp-barcode');
+  if(el){el.value=code;vpBarcodePreview();}
+  showToast('Barcode generated — save to confirm','info');
+}
+
 function vpBarcodePreview(){
   var el=document.getElementById('vp-barcode');if(!el)return;
   var val=el.value.trim();
   var wrap=document.getElementById('vp-barcode-preview');if(!wrap)return;
-  if(!val){wrap.innerHTML='<div class="tx3 fs-12">Enter a barcode value to preview</div>';return;}
+  if(!val){
+    wrap.innerHTML='<div class="tx3 fs-12" style="padding:8px 0;">No barcode — product can still be saved without one.</div>';
+    return;
+  }
+  // Live duplicate check
+  var conflict=checkBarcodeConflict(val,_editMatId,_editVi);
+  var conflictHtml='';
+  if(conflict){
+    conflictHtml='<div style="background:var(--al);border-radius:8px;padding:8px 10px;margin-top:8px;display:flex;align-items:center;gap:8px;">'
+      +'<span style="font-size:16px;">⚠️</span>'
+      +'<div style="font-size:12px;color:var(--at);"><strong>Duplicate barcode</strong> — already used by:<br>'+esc(conflict.matName)+' · '+esc(conflict.varName)+'</div>'
+      +'</div>';
+  }
   var svg=C128.svg(val,200,44);
-  wrap.innerHTML='<div style="background:#fff;border:1px solid var(--br);border-radius:6px;padding:6px 10px;">'+svg+'<div style="font-size:9px;color:#999;text-align:center;margin-top:2px;font-family:monospace;">'+esc(val)+'</div></div>';
+  wrap.innerHTML='<div style="background:#fff;border:1px solid '+(conflict?'var(--a)':'var(--br)')+';border-radius:6px;padding:6px 10px;text-align:center;">'
+    +svg
+    +'<div style="font-size:9px;color:#999;margin-top:2px;font-family:monospace;">'+esc(val)+'</div>'
+    +'</div>'
+    +conflictHtml;
 }
 function buildVInventory(m,vi){
   var v=m.variants[vi];
