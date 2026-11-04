@@ -1398,6 +1398,11 @@ function matStockStatus(m){var s=m.variants.map(stockStatus);if(s.every(function
 function typeChipClass(t){return t==='finished'?'chip-f':t==='raw'?'chip-r':'chip-p';}
 function todayStr(){return new Date().toISOString().slice(0,10);}
 function uuid(){return Math.random().toString(36).slice(2,9);}
+// Collection helpers — normalizes manualIds entries which may be Number (legacy) or {matId,variantIdxs:[]}
+function colEntryMatId(entry){return typeof entry==='number'?entry:entry.matId;}
+function colHasMat(col,matId){return !!(col.manualIds&&col.manualIds.some(function(e){return colEntryMatId(e)===matId;}));}
+function colAddMat(col,matId){col.manualIds=col.manualIds||[];if(!colHasMat(col,matId))col.manualIds.push({matId:matId,variantIdxs:[]});}
+function colRemoveMat(col,matId){col.manualIds=(col.manualIds||[]).filter(function(e){return colEntryMatId(e)!==matId;});}
 function nextId(arr){return arr.length?Math.max.apply(null,arr.map(function(x){return x.id||0;}))+1:1;}
 function fmtMoney(n){return '₹'+(Number(n)||0).toLocaleString('en-IN');}
 function showToast(msg,type){
@@ -1513,7 +1518,7 @@ function renderList(){
     html+='</div>';
     html+='<div class="mat-right">';
     html+='<span class="mat-qty">'+ts+' <span style="font-size:12px;color:var(--tx3);">'+esc(m.unit)+'</span></span>';
-    var inCol=collections.some(function(c){return (c.manualIds&&c.manualIds.indexOf(m.id)>=0)||(m.tags&&c.tagRules&&m.tags.some(function(t){return c.tagRules.indexOf(t)>=0;}));});
+    var inCol=collections.some(function(c){return colHasMat(c,m.id)||(m.tags&&c.tagRules&&m.tags.some(function(t){return c.tagRules.indexOf(t)>=0;}));});
     if(inCol)html+='<span style="width:8px;height:8px;border-radius:50%;background:var(--p);flex-shrink:0;display:inline-block;"></span>';
     html+='<span class="dot dot-'+st+'"></span>';
     html+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
@@ -1779,7 +1784,7 @@ function buildMDListings(m){
   return html;
 }
 function buildMDCollections(m){
-  var mCols=collections.filter(function(c){return c.manualIds&&c.manualIds.indexOf(m.id)>=0;});
+  var mCols=collections.filter(function(c){return colHasMat(c,m.id);});
   var html='<div class="card"><div class="sect-hd"><h3>Collections</h3><button class="btn-sm" onclick="addMatToCollectionPicker()">+ Add to Collection</button></div>';
   if(!mCols.length)html+='<div class="tx3 text-center fs-13" style="padding:16px 0;">Not in any collection yet</div>';
   mCols.forEach(function(c){
@@ -1813,14 +1818,13 @@ function addMatToCollectionPicker(){
 }
 function addMatToCol(colId){
   var c=collections.find(function(x){return x.id===colId;});if(!c)return;
-  c.manualIds=c.manualIds||[];
-  if(c.manualIds.indexOf(_mdMatId)<0)c.manualIds.push(_mdMatId);
+  colAddMat(c,_mdMatId);
   setMTab(4);
   showToast('Added to '+c.name);
 }
 function removeMatFromCollection(colId){
   var c=collections.find(function(x){return x.id===colId;});if(!c)return;
-  c.manualIds=c.manualIds.filter(function(id){return id!==_mdMatId;});
+  colRemoveMat(c,_mdMatId);
   setMTab(4);
   showToast('Removed from '+c.name);
 }
@@ -1897,7 +1901,7 @@ function buildVImages(m,vi){
   var v=m.variants[vi];
   var imgs=v.images||[];
   var matImgs=m.imgs||[];
-  var html='<div class="card"><div class="sect-hd"><h3>Variant Images</h3><button class="btn-sm" onclick="showVImgForm()">+ Add URL</button></div>';
+  var html='<div class="card"><div class="sect-hd"><h3>Variant Images</h3></div>';
   html+='<div id="vi-imgs" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">';
   imgs.forEach(function(src,i){
     html+='<div style="position:relative;width:80px;height:80px;border-radius:10px;overflow:hidden;border:1px solid var(--br);">'+
@@ -1907,12 +1911,18 @@ function buildVImages(m,vi){
   });
   if(!imgs.length)html+='<div class="tx3 fs-13" style="padding:4px 0 8px;">No variant-specific images. Product images will be used by default.</div>';
   html+='</div>';
+  html+='<div style="display:flex;gap:8px;margin-top:4px;">'+
+    '<label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;border:1.5px dashed var(--br2);border-radius:10px;cursor:pointer;color:var(--p);font-size:13px;font-weight:500;">'+
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>'+
+    'Upload photo<input type="file" accept="image/*" style="display:none;" onchange="handleVarImgUpload(event)"></label>'+
+    '<button class="btn-sm" onclick="showVImgForm()" style="white-space:nowrap;">+ URL</button>'+
+    '</div>';
   // Inline add-url form
-  html+='<div id="vi-add-form" style="display:none;background:var(--sf2);border:1px solid #e0dff5;border-radius:10px;padding:12px;margin-top:4px;">'+
+  html+='<div id="vi-add-form" style="display:none;background:var(--sf2);border:1px solid #e0dff5;border-radius:10px;padding:12px;margin-top:8px;">'+
     '<div class="fld" style="margin-bottom:10px;"><label style="font-size:12px;margin-bottom:4px;">Image URL</label>'+
     '<input id="vi-img-url" type="url" placeholder="https://…" style="font-size:14px;" onkeydown="if(event.key===\'Enter\')addVImg();"></div>'+
     '<div style="display:flex;gap:8px;">'+
-    '<button class="btn-sm" style="flex:1;" onclick="addVImg()">Add Image</button>'+
+    '<button class="btn-sm" style="flex:1;" onclick="addVImg()">Add</button>'+
     '<button class="btn-ghost" style="font-size:13px;padding:6px 10px;" onclick="hideVImgForm()">Cancel</button>'+
     '</div></div>';
   html+='</div>';
@@ -1925,6 +1935,17 @@ function buildVImages(m,vi){
     html+='</div></div>';
   }
   return html;
+}
+function handleVarImgUpload(e){
+  var file=e.target.files&&e.target.files[0];if(!file)return;
+  var m=getMat(_editMatId);var v=m&&m.variants[_editVi];if(!v)return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    v.images=v.images||[];
+    v.images.push(ev.target.result);
+    setVTab(5);showToast('Image added');
+  };
+  reader.readAsDataURL(file);
 }
 function showVImgForm(){
   var el=document.getElementById('vi-add-form');if(!el)return;
@@ -2043,7 +2064,44 @@ function buildVInventory(m,vi){
     '<div class="stat-tile"><div class="stat-val">'+v.qty+'</div><div class="stat-lbl">Total</div></div>'+
     '<div class="stat-tile"><div class="stat-val">'+avail+'</div><div class="stat-lbl">Available</div></div>'+
     '<div class="stat-tile"><div class="stat-val">'+reserved+'</div><div class="stat-lbl">Reserved</div></div>'+
+    '<div class="stat-tile"><div class="stat-val">'+(v.minqty||0)+'</div><div class="stat-lbl">Min Qty</div></div>'+
     '</div>';
+  // Stock history sparkline (12-week SVG, synthesize from movements if no stockHistory)
+  var hist=v.stockHistory&&v.stockHistory.length?v.stockHistory.slice():[];
+  if(!hist.length){
+    var synPts=[];var running=v.qty;
+    var mvsSorted=(v.movements||[]).slice().sort(function(a,b){return a.date>b.date?1:-1;});
+    for(var si=mvsSorted.length-1;si>=0;si--){
+      var smv=mvsSorted[si];
+      if(smv.type==='Stock in')running-=smv.qty;
+      else if(smv.type==='Stock out'||smv.type==='Transfer')running+=smv.qty;
+      synPts.unshift({w:smv.date,qty:Math.max(0,running)});
+    }
+    if(synPts.length)hist=synPts;
+  }
+  if(hist.length>1){
+    var W=320,H=80,pad=8;
+    var pts=hist.slice(-12);
+    var maxQ=Math.max.apply(null,pts.map(function(p){return p.qty;}));
+    var minQ=Math.min.apply(null,pts.map(function(p){return p.qty;}));
+    var range=maxQ-minQ||1;
+    var xStep=(W-pad*2)/(pts.length-1);
+    var polyPts=pts.map(function(p,i){
+      var x=pad+i*xStep;
+      var y=pad+(H-pad*2)*(1-(p.qty-minQ)/range);
+      return x+','+y;
+    }).join(' ');
+    var areaClose=' '+(pad+(pts.length-1)*xStep)+','+(H-pad)+' '+pad+','+(H-pad);
+    var lastX=pad+(pts.length-1)*xStep;
+    var lastY=pad+(H-pad*2)*(1-(pts[pts.length-1].qty-minQ)/range);
+    html+='<div class="card" style="padding:12px;"><div class="sect-hd" style="margin-bottom:8px;"><h3>Stock History</h3><span class="tx2 fs-12">'+minQ+'–'+maxQ+' '+esc(m.unit)+'</span></div>';
+    html+='<svg width="100%" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="display:block;max-height:80px;">';
+    html+='<defs><linearGradient id="vsh-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1D9E75" stop-opacity=".25"/><stop offset="100%" stop-color="#1D9E75" stop-opacity="0"/></linearGradient></defs>';
+    html+='<polygon points="'+polyPts+areaClose+'" fill="url(#vsh-grad)"/>';
+    html+='<polyline points="'+polyPts+'" fill="none" stroke="#1D9E75" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+    html+='<circle cx="'+lastX+'" cy="'+lastY+'" r="3.5" fill="#1D9E75"/>';
+    html+='</svg></div>';
+  }
   html+='<div class="card"><div class="sect-hd"><h3>Location Breakdown</h3></div>';
   ['stores','jobbers','production','warehouse'].forEach(function(loc){
     var locs=v.inventory[loc];
@@ -2279,13 +2337,19 @@ function buildInfoHTML(m){
       '<button onclick="removeMatImg('+i+')" style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.55);border:none;color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>'+
       '</div>';
   });
-  if(!imgs.length)html+='<div class="tx3 fs-13" style="padding:4px 0 8px;">No images yet — add a URL or upload via the Catalog Generator.</div>';
+  if(!imgs.length)html+='<div class="tx3 fs-13" style="padding:4px 0 8px;">No images yet.</div>';
   html+='</div>';
-  html+='<div id="ci-img-add-wrap" style="display:none;background:var(--sf2);border:1px solid #e0dff5;border-radius:10px;padding:12px;margin-top:4px;">'+
+  html+='<div style="display:flex;gap:8px;margin-top:4px;">'+
+    '<label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;border:1.5px dashed var(--br2);border-radius:10px;cursor:pointer;color:var(--p);font-size:13px;font-weight:500;">'+
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>'+
+    'Upload photo<input type="file" accept="image/*" style="display:none;" onchange="handleMatImgUpload(event)"></label>'+
+    '<button class="btn-sm" onclick="addMatImageUrl()" style="white-space:nowrap;">+ URL</button>'+
+    '</div>'+
+  '<div id="ci-img-add-wrap" style="display:none;background:var(--sf2);border:1px solid #e0dff5;border-radius:10px;padding:12px;margin-top:8px;">'+
     '<div class="fld" style="margin-bottom:10px;"><label style="font-size:12px;margin-bottom:4px;">Image URL</label>'+
     '<input id="ci-img-url-inp" type="url" placeholder="https://…" style="font-size:14px;" onkeydown="if(event.key===\'Enter\')confirmAddMatImg();"></div>'+
     '<div style="display:flex;gap:8px;">'+
-    '<button class="btn-sm" style="flex:1;" onclick="confirmAddMatImg()">Add Image</button>'+
+    '<button class="btn-sm" style="flex:1;" onclick="confirmAddMatImg()">Add</button>'+
     '<button class="btn-ghost" style="font-size:13px;padding:6px 10px;" onclick="addMatImageUrl()">Cancel</button>'+
     '</div></div>';
   html+='</div>';
@@ -2358,9 +2422,36 @@ function buildInfoHTML(m){
   html+='</div>';
   html+='<div id="ci-cats">';
   (m.cats||[]).forEach(function(cat,ci){
-    html+='<div class="mb-8"><div class="row-between mb-4"><span class="fw-6 fs-13">'+esc(cat.name)+'</span><button class="btn-ghost" style="color:var(--r);" onclick="removeCategory('+ci+')">×</button></div>';
+    var matchSets=optionSets.filter(function(os){return os.name.toLowerCase()===cat.name.toLowerCase()||os.cat&&os.cat.toLowerCase()===cat.name.toLowerCase();});
+    html+='<div class="mb-8" id="ci-cat-row-'+ci+'">';
+    html+='<div class="row-between mb-4">';
+    html+='<span class="fw-6 fs-13">'+esc(cat.name)+'</span>';
+    html+='<div style="display:flex;gap:6px;align-items:center;">';
+    if(matchSets.length){html+='<button class="btn-ghost" style="font-size:12px;color:var(--p);padding:2px 8px;" onclick="toggleCatPresets('+ci+')">Presets ↓</button>';}
+    html+='<button class="btn-ghost" style="color:var(--tx3);font-size:13px;" onclick="showAddCatValForm('+ci+')">+ Value</button>';
+    html+='<button class="btn-ghost" style="color:var(--r);font-size:13px;" onclick="removeCategory('+ci+')">×</button>';
+    html+='</div></div>';
+    // Preset dropdown (hidden by default)
+    if(matchSets.length){
+      html+='<div id="ci-preset-dd-'+ci+'" style="display:none;background:var(--sf2);border:1px solid var(--br);border-radius:10px;padding:10px;margin-bottom:8px;">';
+      matchSets.forEach(function(os,si){
+        html+='<div style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><span class="fw-6 fs-12" style="color:var(--tx2);">'+esc(os.name)+'</span><button class="btn-sm" style="font-size:11px;padding:2px 10px;" onclick="applyPresetAll('+ci+',\''+os.id+'\')">Select all</button></div>';
+        html+='<div style="display:flex;flex-wrap:wrap;gap:4px;">';
+        os.values.forEach(function(val){
+          var already=cat.values.indexOf(val)>=0;
+          var pBg=already?'var(--p)':'transparent';var pBd=already?'var(--p)':'var(--br)';var pCol=already?'#fff':'var(--tx)';
+          html+='<button onclick="togglePresetVal('+ci+',\''+os.id+'\',this)" data-val="'+esc(val)+'" style="padding:3px 10px;border-radius:12px;border:1.5px solid '+pBd+';background:'+pBg+';color:'+pCol+';font-size:12px;cursor:pointer;">'+esc(val)+'</button>';
+        });
+        html+='</div></div>';
+      });
+      html+='</div>';
+    }
+    // Add single value form (hidden)
+    html+='<div id="ci-addval-form-'+ci+'" style="display:none;background:var(--sf2);border:1px solid #e0dff5;border-radius:10px;padding:10px;margin-bottom:8px;">';
+    html+='<div style="display:flex;gap:6px;"><input id="ci-addval-inp-'+ci+'" type="text" placeholder="Add value" style="flex:1;font-size:13px;" onkeydown="if(event.key===\'Enter\')confirmAddVal('+ci+');if(event.key===\'Escape\')hideCatValForm('+ci+');"><button class="btn-sm" onclick="confirmAddVal('+ci+')">Add</button><button class="btn-ghost" style="font-size:12px;" onclick="hideCatValForm('+ci+')">×</button></div>';
+    html+='</div>';
     html+='<div style="display:flex;flex-wrap:wrap;gap:6px;">';
-    cat.values.forEach(function(val){html+='<span class="chip chip-f">'+esc(val)+'</span>';});
+    cat.values.forEach(function(val,vi){html+='<span class="chip chip-f" style="display:inline-flex;align-items:center;gap:4px;">'+esc(val)+'<button onclick="removeCatVal('+ci+','+vi+')" style="background:none;border:none;color:var(--tx3);font-size:14px;line-height:1;cursor:pointer;padding:0 0 0 2px;">×</button></span>';});
     html+='</div></div>';
   });
   html+='</div>';
@@ -2374,13 +2465,20 @@ function buildInfoHTML(m){
   html+='<button class="btn-sm" style="flex:1;" onclick="addCategory()">Add Category</button>';
   html+='<button class="btn-ghost" style="font-size:13px;padding:6px 10px;" onclick="hideAddCategoryForm()">Cancel</button>';
   html+='</div></div>';
-  html+='<div style="margin-top:8px;display:flex;gap:8px;">'+
-    '<select id="ci-preset" style="flex:1;"><option value="">Load preset…</option>';
-  optionSets.forEach(function(os){html+='<option value="'+os.id+'">'+esc(os.name)+'</option>';});
-  html+='</select><button class="btn-sm" onclick="loadPreset()">Load</button></div>';
   html+='<button class="btn-sm" style="width:100%;margin-top:8px;" onclick="generateVariants()">⚡ Generate combinations</button>';
   html+='</div>';
   return html;
+}
+function handleMatImgUpload(e){
+  var file=e.target.files&&e.target.files[0];if(!file)return;
+  var m=_editMatId?getMat(_editMatId):null;if(!m)return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    m.imgs=m.imgs||[];
+    m.imgs.push(ev.target.result);
+    setCTab(0);showToast('Image added');
+  };
+  reader.readAsDataURL(file);
 }
 function addMatImageUrl(){
   var wrap=document.getElementById('ci-img-add-wrap');
@@ -2493,14 +2591,55 @@ function addCategory(){
 }
 function removeCategory(i){var m=_editMatId?getMat(_editMatId):null;if(m&&m.cats)m.cats.splice(i,1);setCTab(0);}
 function loadPreset(){
-  var sel=document.getElementById('ci-preset');if(!sel||!sel.value)return;
-  var os=optionSets.find(function(o){return o.id===sel.value;});if(!os)return;
-  var m=_editMatId?getMat(_editMatId):null;
-  if(!m){showToast('Save material first','info');return;}
-  m.cats=m.cats||[];
-  if(m.cats.find(function(c){return c.name===os.name;})){showToast(os.name+' already added','info');return;}
-  m.cats.push({name:os.name,values:os.values.slice()});
-  setCTab(0);showToast(os.name+' added');
+  // legacy global preset — kept for compatibility
+}
+function toggleCatPresets(ci){
+  var dd=document.getElementById('ci-preset-dd-'+ci);
+  if(!dd)return;
+  dd.style.display=dd.style.display==='none'?'block':'none';
+}
+function applyPresetAll(ci,osId){
+  var m=_editMatId?getMat(_editMatId):null;if(!m)return;
+  var cat=m.cats[ci];if(!cat)return;
+  var os=optionSets.find(function(o){return o.id===osId;});if(!os)return;
+  os.values.forEach(function(val){if(cat.values.indexOf(val)<0)cat.values.push(val);});
+  setCTab(0);showToast('Preset applied');
+}
+function togglePresetVal(ci,osId,btn){
+  var m=_editMatId?getMat(_editMatId):null;if(!m)return;
+  var cat=m.cats[ci];if(!cat)return;
+  var val=btn.getAttribute('data-val');
+  var idx=cat.values.indexOf(val);
+  if(idx>=0){
+    cat.values.splice(idx,1);
+    btn.style.background='transparent';btn.style.color='var(--tx)';btn.style.borderColor='var(--br)';
+  } else {
+    cat.values.push(val);
+    btn.style.background='var(--p)';btn.style.color='#fff';btn.style.borderColor='var(--p)';
+  }
+}
+function showAddCatValForm(ci){
+  var form=document.getElementById('ci-addval-form-'+ci);
+  if(form){form.style.display='block';var inp=document.getElementById('ci-addval-inp-'+ci);if(inp)setTimeout(function(){inp.focus();},50);}
+}
+function hideCatValForm(ci){
+  var form=document.getElementById('ci-addval-form-'+ci);
+  if(form)form.style.display='none';
+  var inp=document.getElementById('ci-addval-inp-'+ci);if(inp)inp.value='';
+}
+function confirmAddVal(ci){
+  var inp=document.getElementById('ci-addval-inp-'+ci);
+  var val=(inp?inp.value:'').trim();
+  if(!val)return;
+  var m=_editMatId?getMat(_editMatId):null;if(!m)return;
+  var cat=m.cats[ci];if(!cat)return;
+  if(cat.values.indexOf(val)<0)cat.values.push(val);
+  hideCatValForm(ci);setCTab(0);
+}
+function removeCatVal(ci,vi){
+  var m=_editMatId?getMat(_editMatId):null;if(!m)return;
+  var cat=m.cats[ci];if(!cat)return;
+  cat.values.splice(vi,1);setCTab(0);
 }
 function generateVariants(){
   var m=_editMatId?getMat(_editMatId):null;if(!m){showToast('Save material first','info');return;}
@@ -3600,11 +3739,11 @@ function renderCollections(){
   }
   var html='';
   collections.forEach(function(c){
-    var cnt=(c.manualIds||[]).length;
     var vis=c.visibility==='public'?'🌐 Public':'🔒 Private';
     var accentColor=c.color||'#4A3BB5';
     var tagMatched=materials.filter(function(m){return m.tags&&c.tagRules&&c.tagRules.length&&c.tagRules.some(function(t){return m.tags.indexOf(t)>=0;});}).length;
-    var totalMats=(c.manualIds||[]).length+tagMatched;
+    var manualCnt=materials.filter(function(m){return colHasMat(c,m.id);}).length;
+    var totalMats=manualCnt+tagMatched;
     html+='<div class="col-card" onclick="openCDetail('+c.id+')" style="border-top:4px solid '+accentColor+';">';
     html+='<div class="col-card-hd"><div class="flex-1"><div class="fw-6 fs-14">'+esc(c.name)+'</div><div class="tx2 fs-12">'+totalMats+' products';
     if((c.tagRules||[]).length)html+=' · '+c.tagRules.length+' tag rule'+(c.tagRules.length>1?'s':'');
@@ -3729,20 +3868,19 @@ function openAddProductPicker(){
 function renderColProductPicker(){
   var search=_colPickerSearch.toLowerCase();
   var c=collections.find(function(x){return x.id===_editColId;});
-  var already=c?c.manualIds:[];
-  var arr=materials.filter(function(m){
-    if(_colPickerFilter==='added')return already.indexOf(m.id)>=0;
+    var arr=materials.filter(function(m){
+    if(_colPickerFilter==='added')return c&&colHasMat(c,m.id);
     if(_colPickerFilter==='low')return matStockStatus(m)==='low';
     if(_colPickerFilter==='out')return matStockStatus(m)==='out';
     if(_colPickerFilter==='raw')return m.type==='raw';
     if(_colPickerFilter==='finished')return m.type==='finished';
     return true;
-  }).filter(function(m){return !search||m.name.toLowerCase().indexOf(search)>=0||m.sku.toLowerCase().indexOf(search)>=0;});
+  }).filter(function(m){var search=(_colPickerSearch||'').toLowerCase();return !search||m.name.toLowerCase().indexOf(search)>=0||(m.sku||'').toLowerCase().indexOf(search)>=0;});
   var el=document.getElementById('cppicker-list');if(!el)return;
   if(!arr.length){el.innerHTML='<div class="tx3 fs-13 text-center" style="padding:16px;">No products match</div>';return;}
   var html='';
   arr.forEach(function(m){
-    var inCol=already.indexOf(m.id)>=0;
+    var inCol=c&&colHasMat(c,m.id);
     var st=matStockStatus(m);
     var stc=st==='ok'?'var(--gl)':st==='low'?'var(--al)':'var(--rl)';
     var stl=st==='ok'?'In stock':st==='low'?'Low stock':'Out of stock';
@@ -3757,8 +3895,7 @@ function colPickerSearch(v){_colPickerSearch=v;renderColProductPicker();}
 function colPickerFilter(f){_colPickerFilter=f;document.querySelectorAll('#cppicker-filters .chip').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-f')===f);});renderColProductPicker();}
 function toggleColProduct(matId){
   var c=collections.find(function(x){return x.id===_editColId;});if(!c)return;
-  var idx=c.manualIds.indexOf(matId);
-  if(idx>=0)c.manualIds.splice(idx,1);else c.manualIds.push(matId);
+  if(colHasMat(c,matId))colRemoveMat(c,matId);else colAddMat(c,matId);
   renderColProductPicker();
 }
 function doneAddingProducts(){goBack();}
@@ -3767,7 +3904,7 @@ function openCDetail(id){
   var c=collections.find(function(x){return x.id===id;});if(!c)return;
   document.getElementById('cd-title').textContent=c.name;
   var el=document.getElementById('cdetail-body');
-  var mats=materials.filter(function(m){return c.manualIds&&c.manualIds.indexOf(m.id)>=0;});
+  var mats=materials.filter(function(m){return colHasMat(c,m.id);});
   var html='<div class="card"><div class="sect-hd"><h3>'+mats.length+' Products</h3><button class="btn-sm" onclick="openAddProductPicker()">+ Add</button></div>';
   if(!mats.length)html+='<div class="tx3 text-center fs-13" style="padding:16px;">No products yet. Tap + Add to include materials.</div>';
   mats.forEach(function(m){
@@ -3787,7 +3924,7 @@ function openCDetail(id){
   el.innerHTML=html;
   pushScreen('s-cdetail');
 }
-function removeFromCollection(matId){var c=collections.find(function(x){return x.id===_editColId;});if(c)c.manualIds=c.manualIds.filter(function(i){return i!==matId;});openCDetail(_editColId);}
+function removeFromCollection(matId){var c=collections.find(function(x){return x.id===_editColId;});if(c)colRemoveMat(c,matId);openCDetail(_editColId);}
 function openShareLink(){
   var c=collections.find(function(x){return x.id===_editColId;});if(!c)return;
   var el=document.getElementById('sl-enabled');if(el)el.checked=!!c.previewEnabled;
