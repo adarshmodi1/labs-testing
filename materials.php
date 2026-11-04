@@ -168,7 +168,8 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
 .ld-preview-label .lf-mrp{font-size:10px;font-weight:700;}
 .ld-preview-label .lf-offer{font-size:9px;color:#E24B4A;}
 .ld-preview-label .lf-sku{font-size:8px;color:#999;font-family:monospace;}
-.ld-preview-label .lf-barcode{width:80%;height:20px;background:repeating-linear-gradient(90deg,#000 0,#000 2px,transparent 2px,transparent 4px);border-radius:1px;}
+.ld-preview-label .lf-barcode{width:88%;display:block;}
+.ld-preview-label .lf-barcode svg{display:block;width:100%;height:100%;}
 .ld-preview-label .lf-design{font-size:8px;color:#aaa;}
 .ld-preview-label .lf-grid-info{font-size:8px;color:#bbb;position:absolute;bottom:3px;right:4px;}
 /* Generate labels screen */
@@ -1245,7 +1246,14 @@ function renderMdActionBar(m){
   document.getElementById('md-action-bar').innerHTML=html;
 }
 function editCurrentMat(){closeSheet('sh-mat-actions');openCreate(_mdMatId);}
-function openBarcodeForMat(){showToast('Select a variant to generate barcode','info');}
+function openBarcodeForMat(){
+  // Open add-label sheet for the currently viewed variant (from s-vdetail or s-mdetail)
+  var matId=_editMatId||_mdMatId;
+  var vi=(_editVi!=null)?_editVi:0;
+  var m=getMat(matId);
+  if(!m||!m.variants.length){showToast('No variants found','error');return;}
+  openAddLabel(matId,vi);
+}
 function quickPurchaseOrder(){
   closeSheet('sh-mat-actions');
   initMatIn();
@@ -1389,10 +1397,11 @@ function buildVPricing(m,vi){
     '</div>'+
     '<div class="card">'+
     '<div class="sect-hd"><h3>Barcode</h3></div>'+
-    '<div class="fld"><label>Barcode value</label><input type="text" id="vp-barcode" value="'+esc(v.barcode)+'" placeholder="Enter or scan barcode"></div>'+
+    '<div class="fld"><label>Barcode value</label><input type="text" id="vp-barcode" value="'+esc(v.barcode)+'" placeholder="Enter or scan barcode" oninput="vpBarcodePreview()"></div>'+
+    '<div id="vp-barcode-preview" style="margin:4px 0 10px;display:flex;justify-content:center;">'+(v.barcode?'<div style="background:#fff;border:1px solid var(--br);border-radius:6px;padding:6px 10px;">'+C128.svg(v.barcode,180,40)+'<div style="font-size:9px;color:#999;text-align:center;margin-top:2px;font-family:monospace;">'+esc(v.barcode)+'</div></div>':'<div class="tx3 fs-12">Enter a barcode value to preview</div>')+'</div>'+
     '<div style="display:flex;gap:8px;">'+
     '<button class="btn-sm" onclick="setBarToSku()">Set to SKU</button>'+
-    '<button class="btn-sm" onclick="openAddLabel('+m.id+','+vi+')">🏷 Print Label</button>'+
+    '<button class="btn-sm btn-p-sm" onclick="openAddLabel('+m.id+','+vi+')">🏷 Print Label</button>'+
     '</div></div>';
 }
 function vCalcDisc(){
@@ -1410,7 +1419,15 @@ function vCalcMargin(){
 }
 function setBarToSku(){
   var m=getMat(_editMatId);var v=m&&m.variants[_editVi];if(!v)return;
-  var el=document.getElementById('vp-barcode');if(el)el.value=v.sku;
+  var el=document.getElementById('vp-barcode');if(el){el.value=v.sku;vpBarcodePreview();}
+}
+function vpBarcodePreview(){
+  var el=document.getElementById('vp-barcode');if(!el)return;
+  var val=el.value.trim();
+  var wrap=document.getElementById('vp-barcode-preview');if(!wrap)return;
+  if(!val){wrap.innerHTML='<div class="tx3 fs-12">Enter a barcode value to preview</div>';return;}
+  var svg=C128.svg(val,200,44);
+  wrap.innerHTML='<div style="background:#fff;border:1px solid var(--br);border-radius:6px;padding:6px 10px;">'+svg+'<div style="font-size:9px;color:#999;text-align:center;margin-top:2px;font-family:monospace;">'+esc(val)+'</div></div>';
 }
 function buildVInventory(m,vi){
   var v=m.variants[vi];
@@ -2045,8 +2062,74 @@ function ldPreview(){
   }
   wrap.innerHTML=html;
 }
+// ===== CODE-128 BARCODE RENDERER =====
+// Encodes a string as Code-128B and returns an inline SVG string.
+var C128={
+  startB:104,stop:106,
+  charB:function(c){return c.charCodeAt(0)-32;},
+  bars:[
+    // Code 128 bar patterns (11 bits each), indices 0–106
+    '11011001100','11001101100','11001100110','10010011000','10010001100',
+    '10001001100','10011001000','10011000100','10001100100','11001001000',
+    '11001000100','11000100100','10110011100','10011011100','10011001110',
+    '10111001100','10011101100','10011100110','11001110010','11001011100',
+    '11001001110','11011100100','11001110100','11101101110','11101001100',
+    '11100101100','11100100110','11101100100','11100110100','11100110010',
+    '11011011000','11011000110','11000110110','10100011000','10001011000',
+    '10001000110','10110001000','10001101000','10001100010','11010001000',
+    '11000101000','11000100010','10110111000','10110001110','10001101110',
+    '10111011000','10111000110','10001110110','11101110110','11010001110',
+    '11000101110','11011101000','11011100010','11011101110','11101011000',
+    '11101000110','11100010110','11101101000','11101100010','11100011010',
+    '11101111010','11001000010','11110001010','10100110000','10100001100',
+    '10010110000','10010000110','10000101100','10000100110','10110010000',
+    '10110000100','10011010000','10011000010','10000110100','10000110010',
+    '11000010010','11001010000','11110111010','11000010100','10001111010',
+    '10100111100','10010111100','10010011110','10111100100','10011110100',
+    '10011110010','11110100100','11110010100','11110010010','11011011110',
+    '11011110110','11110110110','10101111000','10100011110','10001011110',
+    '10111101000','10111100010','11110101000','11110100010','10111011110',
+    '10111101110','11101011110','11110101110',
+    '11010000100','11010010000','11010011110','11000111010'// stop
+  ],
+  encode:function(text){
+    var codes=[this.startB];
+    var checksum=this.startB;
+    for(var i=0;i<text.length;i++){
+      var c=this.charB(text[i]);
+      codes.push(c);
+      checksum+=c*(i+1);
+    }
+    codes.push(checksum%103);
+    codes.push(this.stop);
+    return codes;
+  },
+  svg:function(text,w,h){
+    if(!text)return '';
+    var safeTxt='';
+    for(var i=0;i<text.length;i++){var cc=text.charCodeAt(i);if(cc>=32&&cc<=126)safeTxt+=text[i];}
+    if(!safeTxt)return '';
+    var codes=this.encode(safeTxt);
+    var bits='';
+    for(var j=0;j<codes.length;j++)bits+=(this.bars[codes[j]]||'00000000000');
+    bits+='11'; // termination bar
+    var totalBars=bits.length;
+    var barW=w/totalBars;
+    var out='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'">';
+    out+='<rect width="'+w+'" height="'+h+'" fill="white"/>';
+    for(var k=0;k<bits.length;k++){
+      if(bits[k]==='1'){
+        var x=k*barW;
+        out+='<rect x="'+x.toFixed(2)+'" y="0" width="'+barW.toFixed(2)+'" height="'+h+'" fill="black"/>';
+      }
+    }
+    out+='</svg>';
+    return out;
+  }
+};
+
 function buildLabelSVG(design,mat,v,pxW,pxH){
-  // Render a label as an inline SVG/HTML div
+  // Render a label as an inline HTML div with real barcode SVG
   var fields=design.fields||[];
   var html='<div class="ld-preview-label" style="width:'+pxW+'px;height:'+pxH+'px;padding:'+(pxH>35?'4px':'2px')+' '+(pxW>60?'5px':'3px')+';gap:1px;">';
   var fs=Math.max(6,Math.round(pxH/5.5));
@@ -2056,10 +2139,95 @@ function buildLabelSVG(design,mat,v,pxW,pxH){
   if(fields.indexOf('mrp')>=0)html+='<div class="lf-mrp" style="font-size:'+fs+'px;">MRP ₹'+(v?v.mrp:'1,299')+'</div>';
   if(fields.indexOf('offer')>=0)html+='<div class="lf-offer" style="font-size:'+fss+'px;">₹'+(v?v.offer:'999')+'</div>';
   if(fields.indexOf('sku')>=0)html+='<div class="lf-sku" style="font-size:'+fss+'px;">'+(v?esc(v.sku):'SKU-001')+'</div>';
-  if(fields.indexOf('barcode')>=0&&pxH>22)html+='<div class="lf-barcode" style="width:80%;height:'+Math.round(pxH*0.22)+'px;"></div>';
+  if(fields.indexOf('barcode')>=0&&pxH>22){
+    var barcodeText=v?(v.barcode||v.sku||''):('SKU-001');
+    var bH=Math.round(pxH*0.26);
+    html+='<div class="lf-barcode" style="height:'+bH+'px;">'+C128.svg(barcodeText,Math.round(pxW*0.86),bH)+'</div>';
+  }
   if(fields.indexOf('design')>=0)html+='<div class="lf-design" style="font-size:'+(fss-1)+'px;">'+(mat&&mat.designNo?esc(mat.designNo):'DES-001')+'</div>';
   html+='</div>';
   return html;
+}
+
+// ===== PRINT SHEET =====
+// Opens a new window with print-ready label sheet (mm-sized, real barcode SVG, @page rules)
+function buildPrintLabelHTML(jobs){
+  // jobs: [{mat, v, design, qty}] — already expanded to real objects
+  // Collect all barcodeBar SVG data inline
+  var style='*{margin:0;padding:0;box-sizing:border-box;}body{background:#fff;font-family:Arial,Helvetica,sans-serif;}';
+  style+='@media print{@page{margin:4mm;}body{margin:0;}.no-print{display:none;}}';
+  style+='.print-controls{padding:16px;background:#f5f5f5;border-bottom:2px solid #ccc;display:flex;align-items:center;gap:12px;}.print-controls h2{flex:1;font-size:16px;}';
+  style+='.print-btn{background:#4A3BB5;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;}';
+  style+='.print-sheet{padding:6mm;}';
+  style+='.label-job-hd{font-size:11px;color:#666;margin:6mm 0 2mm;border-top:1px dashed #ccc;padding-top:4px;}';
+  style+='.label-row{display:flex;flex-wrap:wrap;gap:3mm;margin-bottom:3mm;}';
+  style+='.label-cell{display:flex;flex-direction:column;justify-content:center;align-items:center;border:0.5pt solid #ccc;overflow:hidden;padding:1mm;gap:0.5mm;background:#fff;}';
+  style+='.lf-name{font-size:9pt;font-weight:700;text-align:center;word-break:break-word;}';
+  style+='.lf-var{font-size:7pt;color:#444;text-align:center;}';
+  style+='.lf-mrp{font-size:8pt;font-weight:700;}';
+  style+='.lf-offer{font-size:7pt;color:#C0392B;}';
+  style+='.lf-sku{font-size:6pt;color:#777;font-family:monospace;}';
+  style+='.lf-barcode{width:88%;display:block;}';
+  style+='.lf-barcode svg{display:block;width:100%;}';
+  style+='.lf-design{font-size:5pt;color:#aaa;}';
+
+  var body='<div class="no-print print-controls"><h2>Label Print Sheet</h2><button class="print-btn" onclick="window.print()">🖨 Print</button></div>';
+  body+='<div class="print-sheet">';
+
+  jobs.forEach(function(job){
+    var d=job.design,m=job.mat,v=job.v,qty=job.qty;
+    var fields=d.fields||[];
+    var cols=d.cols||1;
+    var szW=d.customW||50,szH=d.customH||25;
+    if(d.size&&d.size!=='custom'&&LABEL_SIZES[d.size]){szW=LABEL_SIZES[d.size].w;szH=LABEL_SIZES[d.size].h;}
+
+    body+='<div class="label-job-hd no-print">'+(m?esc(m.name):'')+(v?' · '+esc(v.name):'')+' × '+qty+' labels ('+szW+'×'+szH+'mm)</div>';
+
+    var perRow=cols;
+    var rows=Math.ceil(qty/perRow);
+    var labelCount=0;
+    for(var r=0;r<rows;r++){
+      body+='<div class="label-row">';
+      for(var c=0;c<perRow&&labelCount<qty;c++,labelCount++){
+        body+='<div class="label-cell" style="width:'+szW+'mm;height:'+szH+'mm;">';
+        if(fields.indexOf('name')>=0)body+='<div class="lf-name">'+esc(m?m.name:'Product Name')+'</div>';
+        if(fields.indexOf('var')>=0)body+='<div class="lf-var">'+esc(v?v.name:'Variant')+'</div>';
+        if(fields.indexOf('mrp')>=0)body+='<div class="lf-mrp">MRP ₹'+(v?v.mrp:'0')+'</div>';
+        if(fields.indexOf('offer')>=0&&v&&v.offer)body+='<div class="lf-offer">₹'+v.offer+'</div>';
+        if(fields.indexOf('sku')>=0)body+='<div class="lf-sku">'+(v?esc(v.sku):'')+'</div>';
+        if(fields.indexOf('barcode')>=0){
+          var bc=v?(v.barcode||v.sku||''):'';
+          if(bc){
+            var bH=Math.round(szH*0.3*3.78); // mm to approx px for SVG generation
+            var bW=Math.round(szW*0.86*3.78);
+            body+='<div class="lf-barcode">'+C128.svg(bc,bW,bH)+'</div>';
+          }
+        }
+        if(fields.indexOf('design')>=0)body+='<div class="lf-design">'+(m&&m.designNo?esc(m.designNo):'')+'</div>';
+        body+='</div>';
+      }
+      body+='</div>';
+    }
+  });
+  body+='</div>';
+  // Encode C128.bars into the print window so it can run standalone (or just embed the SVGs inline — we already do)
+  return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Label Print Sheet</title><style>'+style+'</style></head><body>'+body+'<script>document.querySelector(".print-btn") && document.querySelector(".print-btn").focus();<\/script></body></html>';
+}
+
+function executePrint(jobs){
+  // jobs: [{matId,varIdx,designId,qty}]  — resolved from labelQueue or glProducts
+  var resolvedJobs=jobs.map(function(q){
+    var m=getMat(q.matId);
+    var v=m&&m.variants[q.varIdx];
+    var d=labelDesigns.find(function(x){return x.id===q.designId;});
+    return {mat:m,v:v,design:d,qty:q.qty};
+  }).filter(function(j){return j.mat&&j.v&&j.design&&j.qty>0;});
+  if(!resolvedJobs.length){showToast('Nothing to print','error');return;}
+  var html=buildPrintLabelHTML(resolvedJobs);
+  var w=window.open('','_blank','width=900,height=700');
+  if(!w){showToast('Pop-up blocked — allow pop-ups to print','error');return;}
+  w.document.open();w.document.write(html);w.document.close();
+  setTimeout(function(){try{w.focus();w.print();}catch(e){}},400);
 }
 function saveLabelDesignScreen(){
   var nm=document.getElementById('ldes-name').value.trim();
@@ -2150,21 +2318,55 @@ function glPrint(){
   var totalPcs=_glProducts.filter(function(p){return p.qty>0;}).reduce(function(s,p){return s+p.qty;},0);
   if(!totalPcs){showToast('Add quantities first','error');return;}
   if(!_glDesignId){showToast('Select a design first','error');return;}
-  // Add to queue
-  _glProducts.filter(function(p){return p.qty>0;}).forEach(function(p){
-    labelQueue.push({matId:p.matId,varIdx:p.varIdx,designId:_glDesignId,qty:p.qty});
+  var jobs=_glProducts.filter(function(p){return p.qty>0;}).map(function(p){
+    return {matId:p.matId,varIdx:p.varIdx,designId:_glDesignId,qty:p.qty};
   });
+  // Add to queue
+  jobs.forEach(function(j){labelQueue.push(j);});
+  executePrint(jobs);
   _glProducts=[];_glDesignId=null;
-  showToast('Sent '+totalPcs+' labels to printer 🖨');
   setLTab(1);// jump to Queue tab
 }
 
 // ===== LABEL PREVIEW (single variant) =====
 function openAddLabel(matId,vi){
-  // Opens Generate tab pre-focused on this variant
-  _glProducts=_glProducts.filter(function(p){return !(p.matId===matId&&p.varIdx===vi);});
-  _glProducts.push({matId:matId,varIdx:vi,qty:1});
-  navTo('s-labels');setTimeout(function(){setLTab(2);},50);
+  _alMatId=matId;_alVi=vi;_alQty=1;
+  var m=getMat(matId);var v=m&&m.variants[vi];
+  var info=document.getElementById('al-info');
+  if(info)info.innerHTML='<div class="fw-6 fs-13">'+(m?esc(m.name):'')+' · '+(v?esc(v.name):'')+'</div><div class="tx2 fs-12">Stock: '+(v?v.qty:0)+'</div>';
+  document.getElementById('al-qty').textContent='1';
+  // Populate design list with mini previews
+  var dl=document.getElementById('al-designs');
+  if(dl){
+    if(!labelDesigns.length){
+      dl.innerHTML='<div class="tx3 fs-13">No designs yet. <button class="btn-ghost" onclick="closeSheet(\'sh-addlabel\');openLabelDesignScreen(null);">Create one</button></div>';
+    } else {
+      var dhtml='';
+      labelDesigns.forEach(function(d,i){
+        var sz=LABEL_SIZES[d.size]||{label:d.size};
+        var sel=i===0;
+        dhtml+='<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1.5px solid '+(sel?'var(--p)':'var(--br)')+';border-radius:10px;cursor:pointer;background:'+(sel?'var(--pl)':'transparent')+';">';
+        dhtml+='<input type="radio" name="al-design" value="'+d.id+'"'+(sel?' checked':'')+' onchange="document.querySelectorAll(\'[name=al-design]\').forEach(function(r){r.closest(\'label\').style.borderColor=r.checked?\'var(--p)\':\' var(--br)\';r.closest(\'label\').style.background=r.checked?\'var(--pl)\':\' transparent\';});">';
+        dhtml+=buildLabelSVG(d,m,v,56,28);
+        dhtml+='<div><div class="fw-6 fs-13">'+esc(d.name)+'</div><div class="tx2 fs-12">'+esc(sz.label)+'</div></div></label>';
+      });
+      dl.innerHTML=dhtml;
+    }
+  }
+  openSheet('sh-addlabel');
+}
+function alQtyAdj(d){_alQty=Math.max(1,(_alQty||1)+d);document.getElementById('al-qty').textContent=_alQty;}
+function addToQueueConfirm(){
+  var selEl=document.querySelector('[name=al-design]:checked');
+  if(!selEl){showToast('Select a design first','error');return;}
+  var dId=selEl.value;
+  if(!_alMatId&&_alMatId!==0){showToast('No variant selected','error');return;}
+  labelQueue.push({matId:_alMatId,varIdx:_alVi,designId:dId,qty:_alQty||1});
+  closeSheet('sh-addlabel');
+  showToast('Added '+(_alQty||1)+' labels to queue');
+  // Update queue tab label
+  var qtab=document.getElementById('l-tab-queue');
+  if(qtab)qtab.textContent='Queue ('+labelQueue.length+')';
 }
 function openLabelPreview(matId,vi,designId){
   _lpMatId=matId;_lpVi=vi;_lpDesignId=designId||(_ldesEditIdx!==null&&labelDesigns[_ldesEditIdx]?labelDesigns[_ldesEditIdx].id:labelDesigns[0]&&labelDesigns[0].id);_lpQty=1;
@@ -2186,12 +2388,13 @@ function lpRebuild(){
 }
 function lpQtyAdj(d){_lpQty=Math.max(1,(_lpQty||1)+d);document.getElementById('lp-qty').textContent=_lpQty;}
 function doPrint(){
-  labelQueue.push({matId:_lpMatId,varIdx:_lpVi,designId:_lpDesignId,qty:_lpQty||1});
-  showToast('Sent to printer ('+(_lpQty||1)+' copies) 🖨');
+  var job={matId:_lpMatId,varIdx:_lpVi,designId:_lpDesignId,qty:_lpQty||1};
+  labelQueue.push(job);
+  executePrint([job]);
 }
 function printAll(){
-  var totalPcs=labelQueue.reduce(function(s,q){return s+q.qty;},0);
-  showToast('Sent '+labelQueue.length+' jobs / '+totalPcs+' pcs to printer 🖨');
+  if(!labelQueue.length){showToast('Queue is empty','error');return;}
+  executePrint(labelQueue.slice());
 }
 
 // ===== COLLECTIONS =====
