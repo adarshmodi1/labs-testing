@@ -875,6 +875,18 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
 </div>
 
 
+<!-- s-reports: Reports -->
+<div id="s-reports" class="screen">
+  <div class="tb">
+    <button class="tb-bk" onclick="openSheet('sh-nav')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <h1>Reports</h1>
+  </div>
+  <div class="body" id="reports-body"></div>
+</div>
+
+
 <!-- ===== BOTTOM SHEETS ===== -->
 
 <!-- sh-nav: Navigation -->
@@ -916,6 +928,10 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
       <div class="nav-item" onclick="navTo('s-catalog')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         <span class="nav-item-label">Catalog Generator</span>
+      </div>
+      <div class="nav-item" onclick="navTo('s-reports')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span class="nav-item-label">Reports</span>
       </div>
       <div class="nav-item" onclick="navTo('s-sync')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
@@ -1252,6 +1268,7 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
 var materials=[
   {id:1,name:'Cotton Kurta',type:'finished',sku:'CK-001',designNo:'D-001',unit:'pcs',
    vendors:[{name:'Ravi Textiles',type:'supplier',lead:'7 days',contact:'9876543210'}],
+   tags:['cotton','kurta','festive'],
    imgs:[],desc:'Premium cotton kurta for women',notes:'',
    techpackUrl:'',techpackFile:'',externalLinks:[],
    bom:[{id:'b1',materialId:2,materialName:'Cotton Fabric',variantIdx:null,qty:1.2,unit:'metres',note:'',isVariantOverride:false}],
@@ -1272,6 +1289,7 @@ var materials=[
    ]},
   {id:2,name:'Cotton Fabric',type:'raw',sku:'CF-001',designNo:'',unit:'metres',
    vendors:[{name:'Ravi Textiles',type:'supplier',lead:'3 days',contact:'9876543210'}],
+   tags:['raw','cotton','fabric'],
    imgs:[],desc:'100% cotton fabric',notes:'',
    techpackUrl:'',techpackFile:'',externalLinks:[],
    bom:[],cats:[{name:'Colour',values:['Red','Blue','White']}],collections:[],
@@ -1384,6 +1402,7 @@ function navTo(id){
   else if(id==='s-catalog')renderCatalog();
   else if(id==='s-sync'){setSyncTab(0);}
   else if(id==='s-settings')renderOptionSets();
+  else if(id==='s-reports')renderReports();
   showScreen(id);
 }
 
@@ -1460,6 +1479,8 @@ function renderList(){
     html+='</div>';
     html+='<div class="mat-right">';
     html+='<span class="mat-qty">'+ts+' <span style="font-size:12px;color:var(--tx3);">'+esc(m.unit)+'</span></span>';
+    var inCol=collections.some(function(c){return (c.manualIds&&c.manualIds.indexOf(m.id)>=0)||(m.tags&&c.tagRules&&m.tags.some(function(t){return c.tagRules.indexOf(t)>=0;}));});
+    if(inCol)html+='<span style="width:8px;height:8px;border-radius:50%;background:var(--p);flex-shrink:0;display:inline-block;"></span>';
     html+='<span class="dot dot-'+st+'"></span>';
     html+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
     html+='</div></div>';
@@ -1610,9 +1631,70 @@ function buildMDVariants(m){
   return html;
 }
 function buildMDSupply(m){
+  // Costing section
+  m.costingBasis=m.costingBasis||'piece';
+  m.costMaterials=m.costMaterials||[];
+  m.costJobwork=m.costJobwork||[];
+  m.costOther=m.costOther||[];
+  var html='<div class="card">';
+  html+='<div class="sect-hd"><h3>Costing</h3>';
+  html+='<div style="display:flex;gap:4px;"><button class="btn-sm" style="background:'+(m.costingBasis==='piece'?'var(--p)':'transparent')+';color:'+(m.costingBasis==='piece'?'#fff':'var(--tx2)')+';border:1.5px solid '+(m.costingBasis==='piece'?'var(--p)':'var(--br)')+';" onclick="setCostingBasis(\'piece\')">Per piece</button>';
+  html+='<button class="btn-sm" style="background:'+(m.costingBasis==='order'?'var(--p)':'transparent')+';color:'+(m.costingBasis==='order'?'#fff':'var(--tx2)')+';border:1.5px solid '+(m.costingBasis==='order'?'var(--p)':'var(--br)')+';" onclick="setCostingBasis(\'order\')">Per order</button></div></div>';
+  // Materials cost rows
+  html+='<div style="margin-bottom:12px;"><div class="row-between mb-6"><span class="fw-6 fs-12" style="color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;">Materials</span><button class="btn-ghost fs-12" onclick="addCostMaterial()">+ Add</button></div>';
+  html+='<div id="sup-cost-mats">';
+  m.costMaterials.forEach(function(cl,i){
+    html+='<div style="display:grid;grid-template-columns:1fr 60px 70px 70px 24px;gap:4px;align-items:center;margin-bottom:4px;">';
+    html+='<input type="text" value="'+esc(cl.name)+'" placeholder="Material" style="font-size:12px;" onblur="updateCostMat('+i+',\'name\',this.value)">';
+    html+='<input type="number" value="'+esc(cl.qty||'')+'" placeholder="Qty" style="font-size:12px;text-align:center;" onblur="updateCostMat('+i+',\'qty\',this.value)">';
+    html+='<select style="font-size:11px;" onchange="updateCostMat('+i+',\'unit\',this.value)"><option'+(cl.unit==='pcs'?' selected':'')+'>pcs</option><option'+(cl.unit==='metres'?' selected':'')+'>metres</option><option'+(cl.unit==='kg'?' selected':'')+'>kg</option></select>';
+    html+='<input type="number" value="'+esc(cl.rate||'')+'" placeholder="₹ Rate" style="font-size:12px;" onblur="updateCostMat('+i+',\'rate\',this.value)">';
+    html+='<button onclick="removeCostMaterial('+i+')" style="background:none;border:none;color:var(--r);cursor:pointer;font-size:16px;">×</button>';
+    html+='</div>';
+  });
+  if(!m.costMaterials.length)html+='<div class="tx3 fs-12" style="padding:4px 0;">No material lines</div>';
+  html+='</div></div>';
+  // Jobwork rows
+  html+='<div style="margin-bottom:12px;"><div class="row-between mb-6"><span class="fw-6 fs-12" style="color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;">Jobwork</span><button class="btn-ghost fs-12" onclick="addCostJobwork()">+ Add</button></div>';
+  html+='<div id="sup-cost-jw">';
+  m.costJobwork.forEach(function(cl,i){
+    html+='<div style="display:grid;grid-template-columns:1fr 80px 24px;gap:4px;align-items:center;margin-bottom:4px;">';
+    html+='<input type="text" value="'+esc(cl.desc)+'" placeholder="Description" style="font-size:12px;" onblur="updateCostJw('+i+',\'desc\',this.value)">';
+    html+='<input type="number" value="'+esc(cl.amount||'')+'" placeholder="₹ Amt" style="font-size:12px;" onblur="updateCostJw('+i+',\'amount\',this.value)">';
+    html+='<button onclick="removeCostJobwork('+i+')" style="background:none;border:none;color:var(--r);cursor:pointer;font-size:16px;">×</button>';
+    html+='</div>';
+  });
+  if(!m.costJobwork.length)html+='<div class="tx3 fs-12" style="padding:4px 0;">No jobwork lines</div>';
+  html+='</div></div>';
+  // Other cost rows
+  html+='<div style="margin-bottom:12px;"><div class="row-between mb-6"><span class="fw-6 fs-12" style="color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;">Other</span><button class="btn-ghost fs-12" onclick="addCostOther()">+ Add</button></div>';
+  html+='<div id="sup-cost-oth">';
+  m.costOther.forEach(function(cl,i){
+    html+='<div style="display:grid;grid-template-columns:1fr 80px 24px;gap:4px;align-items:center;margin-bottom:4px;">';
+    html+='<input type="text" value="'+esc(cl.desc)+'" placeholder="Description" style="font-size:12px;" onblur="updateCostOther('+i+',\'desc\',this.value)">';
+    html+='<input type="number" value="'+esc(cl.amount||'')+'" placeholder="₹ Amt" style="font-size:12px;" onblur="updateCostOther('+i+',\'amount\',this.value)">';
+    html+='<button onclick="removeCostOther('+i+')" style="background:none;border:none;color:var(--r);cursor:pointer;font-size:16px;">×</button>';
+    html+='</div>';
+  });
+  if(!m.costOther.length)html+='<div class="tx3 fs-12" style="padding:4px 0;">No other lines</div>';
+  html+='</div></div>';
+  // Running total
+  var total=calcSupplyTotal(m);
+  html+='<div style="border-top:1.5px solid var(--br);padding-top:10px;display:flex;justify-content:space-between;align-items:center;">';
+  html+='<span class="fw-6 fs-14">Total cost</span>';
+  html+='<span class="fw-7 fs-16" style="color:var(--p);">₹'+total+'</span>';
+  html+='</div></div>';
+  // Vendors section
+  html+='<div class="card"><div class="sect-hd"><h3>Vendors</h3></div>';
+  (m.vendors||[]).forEach(function(v){
+    html+='<div class="loc-row"><div><div class="fw-6 fs-13">'+esc(v.name)+'</div><div class="tx2 fs-12">'+esc(v.type)+(v.lead?' · '+esc(v.lead):'')+(v.contact?' · '+esc(v.contact):'')+'</div></div></div>';
+  });
+  if(!(m.vendors&&m.vendors.length))html+='<div class="tx3 text-center fs-13" style="padding:8px 0;">Edit Info tab to manage vendors</div>';
+  html+='</div>';
+  // Reservations
   var allRes=[];
-  m.variants.forEach(function(v,vi){v.reservations.forEach(function(r){allRes.push(Object.assign({},r,{variantName:v.name}));});});
-  var html='<div class="card"><div class="sect-hd"><h3>Reservations</h3><button class="btn-sm" onclick="pushScreen(\'s-reserve\')">+ Add</button></div>';
+  m.variants.forEach(function(v,vi){(v.reservations||[]).forEach(function(r){allRes.push(Object.assign({},r,{variantName:v.name}));});});
+  html+='<div class="card"><div class="sect-hd"><h3>Reservations</h3><button class="btn-sm" onclick="pushScreen(\'s-reserve\')">+ Add</button></div>';
   if(!allRes.length)html+='<div class="tx3 text-center" style="padding:16px 0;">No reservations</div>';
   allRes.forEach(function(r){
     html+='<div class="loc-row"><div><div class="fw-6 fs-13">'+esc(r.customer)+'</div><div class="tx2 fs-12">'+esc(r.variantName)+' · '+esc(r.order)+'</div></div><span class="fw-6">'+r.qty+'</span></div>';
@@ -1621,6 +1703,23 @@ function buildMDSupply(m){
   html+='<div class="card"><div class="sect-hd"><h3>Production Queue</h3></div><p class="tx3 fs-13 text-center" style="padding:12px 0;">Connect to Production module to view queue.</p></div>';
   return html;
 }
+function calcSupplyTotal(m){
+  var t=0;
+  (m.costMaterials||[]).forEach(function(cl){t+=(cl.qty||0)*(cl.rate||0);});
+  (m.costJobwork||[]).forEach(function(cl){t+=(cl.amount||0);});
+  (m.costOther||[]).forEach(function(cl){t+=(cl.amount||0);});
+  return Math.round(t*100)/100;
+}
+function setCostingBasis(b){var m=_mdMatId?getMat(_mdMatId):null;if(!m)return;m.costingBasis=b;setMTab(1);}
+function addCostMaterial(){var m=_mdMatId?getMat(_mdMatId):null;if(!m)return;m.costMaterials=m.costMaterials||[];m.costMaterials.push({name:'',qty:0,unit:'pcs',rate:0});setMTab(1);}
+function removeCostMaterial(i){var m=_mdMatId?getMat(_mdMatId):null;if(!m)return;m.costMaterials.splice(i,1);setMTab(1);}
+function updateCostMat(i,field,val){var m=_mdMatId?getMat(_mdMatId):null;if(!m||!m.costMaterials[i])return;m.costMaterials[i][field]=(field==='qty'||field==='rate')?parseFloat(val)||0:val;setMTab(1);}
+function addCostJobwork(){var m=_mdMatId?getMat(_mdMatId):null;if(!m)return;m.costJobwork=m.costJobwork||[];m.costJobwork.push({desc:'',amount:0});setMTab(1);}
+function removeCostJobwork(i){var m=_mdMatId?getMat(_mdMatId):null;if(!m)return;m.costJobwork.splice(i,1);setMTab(1);}
+function updateCostJw(i,field,val){var m=_mdMatId?getMat(_mdMatId):null;if(!m||!m.costJobwork[i])return;m.costJobwork[i][field]=field==='amount'?parseFloat(val)||0:val;setMTab(1);}
+function addCostOther(){var m=_mdMatId?getMat(_mdMatId):null;if(!m)return;m.costOther=m.costOther||[];m.costOther.push({desc:'',amount:0});setMTab(1);}
+function removeCostOther(i){var m=_mdMatId?getMat(_mdMatId):null;if(!m)return;m.costOther.splice(i,1);setMTab(1);}
+function updateCostOther(i,field,val){var m=_mdMatId?getMat(_mdMatId):null;if(!m||!m.costOther[i])return;m.costOther[i][field]=field==='amount'?parseFloat(val)||0:val;setMTab(1);}
 function buildMDProduction(m,filterVi){
   var html='<div class="card"><div class="sect-hd"><h3>B2B Lots</h3><span class="chip chip-f">0 running</span></div>';
   html+='<div class="tx3 text-center fs-13" style="padding:16px 0;">No B2B lots yet</div>';
@@ -1721,6 +1820,7 @@ function saveVDetail(){
     v.mrp=parseFloat(mrpEl.value)||0;
     v.offer=parseFloat((document.getElementById('vp-offer')||{}).value)||0;
     v.cost=parseFloat((document.getElementById('vp-cost')||{}).value)||0;
+    var minqtyEl=document.getElementById('vp-minqty');if(minqtyEl)v.minqty=parseInt(minqtyEl.value)||0;
     var barcodeEl=document.getElementById('vp-barcode');
     var newBarcode=(barcodeEl?barcodeEl.value.trim():'');
     // Duplicate barcode check before saving
@@ -1744,7 +1844,8 @@ function buildVPricing(m,vi){
     '<div class="fld"><label>Offer Price</label><input type="number" id="vp-offer" value="'+v.offer+'" oninput="vCalcDisc()"></div>'+
     '<div class="row-between mb-12"><span class="tx2 fs-13">Discount</span><span class="fw-6 fs-13" id="vp-disc">'+disc+'%</span></div>'+
     '<div class="fld"><label>Vendor Cost</label><input type="number" id="vp-cost" value="'+v.cost+'" oninput="vCalcMargin()"></div>'+
-    '<div class="row-between"><span class="tx2 fs-13">Margin</span><span class="fw-6 fs-13" id="vp-margin">'+margin+'%</span></div>'+
+    '<div class="row-between mb-12"><span class="tx2 fs-13">Margin</span><span class="fw-6 fs-13" id="vp-margin">'+margin+'%</span></div>'+
+    '<div class="fld"><label>Min Quantity</label><input type="number" id="vp-minqty" value="'+v.minqty+'" placeholder="0" min="0"><div style="font-size:11px;color:var(--tx3);margin-top:3px;">Alert threshold for low stock warning</div></div>'+
     '</div>'+
     '<div class="card">'+
     '<div class="sect-hd"><h3>Barcode</h3>'+(v.barcode?'':'<span class="chip chip-r" style="font-size:11px;">Not assigned</span>')+'</div>'+
@@ -2167,12 +2268,32 @@ function buildInfoHTML(m){
     '<div class="fld"><label>Description</label><textarea id="ci-desc" rows="2" placeholder="Product description">'+esc(m.desc)+'</textarea></div>'+
     '<div class="fld"><label>Notes</label><textarea id="ci-notes" rows="2" placeholder="Internal notes">'+esc(m.notes)+'</textarea></div>'+
     '</div>';
+  // Tags chip input
+  var tags=m.tags||[];
+  html+='<div class="card"><div class="sect-hd"><h3>Tags</h3></div>';
+  html+='<div id="ci-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">';
+  tags.forEach(function(tag,i){
+    html+='<span style="display:inline-flex;align-items:center;gap:4px;background:var(--pl);color:var(--p);border:1.5px solid var(--pb);border-radius:16px;padding:3px 10px;font-size:12px;font-weight:500;">'+esc(tag)+'<button onclick="removeMatTag('+i+')" style="background:none;border:none;color:var(--p);cursor:pointer;padding:0;font-size:14px;line-height:1;margin-left:2px;">×</button></span>';
+  });
+  html+='</div>';
+  html+='<div style="display:flex;gap:8px;"><input id="ci-tag-inp" type="text" placeholder="Add tag…" style="flex:1;font-size:13px;" onkeydown="if(event.key===\'Enter\'||event.key===\',\'){event.preventDefault();addMatTag();}"><button class="btn-sm" onclick="addMatTag()">Add</button></div>';
+  html+='</div>';
   // Vendor
   html+='<div class="card"><div class="sect-hd"><h3>Vendors</h3><button class="btn-sm" onclick="addVendorRow()">+ Add</button></div>';
   html+='<div id="ci-vendors">';
   (m.vendors||[]).forEach(function(v,i){
-    html+='<div class="var-row"><div class="var-info"><div class="var-name">'+esc(v.name)+'</div><div class="var-sku">'+esc(v.type)+(v.lead?' · '+esc(v.lead):'')+'</div></div><button class="btn-ghost" style="color:var(--r);" onclick="removeVendorRow('+i+')">×</button></div>';
+    html+='<div style="background:var(--sf2);border:1px solid var(--br);border-radius:10px;padding:10px 12px;margin-bottom:8px;">';
+    html+='<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;">';
+    html+='<div class="fld" style="margin-bottom:6px;"><label style="font-size:11px;">Vendor name</label><input class="ci-vname" type="text" value="'+esc(v.name)+'" placeholder="Vendor name" style="font-size:13px;" onblur="saveVendorRow('+i+')"></div>';
+    html+='<button class="btn-ghost" style="color:var(--r);margin-top:18px;" onclick="removeVendorRow('+i+')">×</button>';
+    html+='</div>';
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">';
+    html+='<div class="fld" style="margin-bottom:0;"><label style="font-size:11px;">Type</label><select class="ci-vtype" style="font-size:12px;" onchange="saveVendorRow('+i+')"><option'+(v.type==='supplier'?' selected':'')+'>supplier</option><option value="primary"'+(v.type==='primary'?' selected':'')+'>primary</option><option value="alternate"'+(v.type==='alternate'?' selected':'')+'>alternate</option></select></div>';
+    html+='<div class="fld" style="margin-bottom:0;"><label style="font-size:11px;">Lead time</label><input class="ci-vlead" type="text" value="'+esc(v.lead)+'" placeholder="e.g. 7 days" style="font-size:12px;" onblur="saveVendorRow('+i+')"></div>';
+    html+='<div class="fld" style="margin-bottom:0;"><label style="font-size:11px;">Contact</label><input class="ci-vcnt" type="tel" value="'+esc(v.contact)+'" placeholder="Phone" style="font-size:12px;" onblur="saveVendorRow('+i+')"></div>';
+    html+='</div></div>';
   });
+  if(!(m.vendors&&m.vendors.length))html+='<div class="tx3 fs-13 text-center" style="padding:8px 0;">No vendors — tap + Add</div>';
   html+='</div></div>';
   // Pricing
   var p0=m.variants&&m.variants[0]||{mrp:0,offer:0,cost:0};
@@ -2195,6 +2316,12 @@ function buildInfoHTML(m){
   }
   // Variant categories
   html+='<div class="card"><div class="sect-hd"><h3>Variant Categories</h3><button class="btn-sm" onclick="showAddCategoryForm()">+ Add</button></div>';
+  html+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">';
+  ['Size','Color','Pattern','Material','Length','Weight'].forEach(function(qc){
+    var already=(m.cats||[]).find(function(c){return c.name.toLowerCase()===qc.toLowerCase();});
+    html+='<button onclick="quickAddCat(\''+qc+'\')" style="padding:4px 12px;border-radius:16px;border:1.5px solid '+(already?'var(--p)':'var(--br)')+';background:'+(already?'var(--pl)':'transparent')+';color:'+(already?'var(--p)':'var(--tx2)')+';font-size:12px;font-weight:500;cursor:pointer;">'+qc+'</button>';
+  });
+  html+='</div>';
   html+='<div id="ci-cats">';
   (m.cats||[]).forEach(function(cat,ci){
     html+='<div class="mb-8"><div class="row-between mb-4"><span class="fw-6 fs-13">'+esc(cat.name)+'</span><button class="btn-ghost" style="color:var(--r);" onclick="removeCategory('+ci+')">×</button></div>';
@@ -2253,8 +2380,53 @@ function copyGlobalPricing(){
   m.variants.forEach(function(v){v.mrp=mrp;v.offer=offer;v.cost=cost;});
   showToast('Pricing copied to all variants');
 }
-function addVendorRow(){showToast('Vendor editor coming soon','info');}
+// Material tags
+function addMatTag(){
+  var inp=document.getElementById('ci-tag-inp');if(!inp)return;
+  var tag=inp.value.trim().replace(/,$/,'').trim();
+  if(!tag)return;
+  var m=_editMatId?getMat(_editMatId):null;if(!m)return;
+  m.tags=m.tags||[];
+  if(m.tags.indexOf(tag)<0){m.tags.push(tag);}
+  inp.value='';setCTab(0);
+}
+function removeMatTag(i){
+  var m=_editMatId?getMat(_editMatId):null;if(!m)return;
+  m.tags=m.tags||[];m.tags.splice(i,1);setCTab(0);
+}
+// Quick-add category chips
+function quickAddCat(name){
+  var m=_editMatId?getMat(_editMatId):null;if(!m)return;
+  m.cats=m.cats||[];
+  if(m.cats.find(function(c){return c.name.toLowerCase()===name.toLowerCase();})){showToast(name+' already added','info');return;}
+  m.cats.push({name:name,values:[]});
+  setCTab(0);showToast(name+' added');
+}
+// Vendor row editor
+function addVendorRow(){
+  var m=_editMatId?getMat(_editMatId):null;if(!m)return;
+  m.vendors=m.vendors||[];
+  m.vendors.push({name:'',type:'supplier',lead:'',contact:''});
+  setCTab(0);
+  // Focus the new vendor name field
+  setTimeout(function(){
+    var rows=document.querySelectorAll('#ci-vendor-name');
+    if(rows.length)rows[rows.length-1].focus();
+  },50);
+}
 function removeVendorRow(i){var m=_editMatId?getMat(_editMatId):null;if(m&&m.vendors)m.vendors.splice(i,1);setCTab(0);}
+function saveVendorRow(i){
+  var m=_editMatId?getMat(_editMatId):null;if(!m||!m.vendors[i])return;
+  var nameEls=document.querySelectorAll('.ci-vname');
+  var typeEls=document.querySelectorAll('.ci-vtype');
+  var leadEls=document.querySelectorAll('.ci-vlead');
+  var cntEls=document.querySelectorAll('.ci-vcnt');
+  if(nameEls[i])m.vendors[i].name=nameEls[i].value.trim();
+  if(typeEls[i])m.vendors[i].type=typeEls[i].value;
+  if(leadEls[i])m.vendors[i].lead=leadEls[i].value.trim();
+  if(cntEls[i])m.vendors[i].contact=cntEls[i].value.trim();
+  showToast('Vendor saved');
+}
 function deleteProdBOMLine(id){var m=_editMatId?getMat(_editMatId):null;if(m)m.bom=m.bom.filter(function(b){return b.id!==id;});setCTab(0);}
 function showAddCategoryForm(){
   var el=document.getElementById('ci-add-cat-form');
@@ -2526,7 +2698,7 @@ function saveCreate(){
   if(!name.trim()){showToast('Enter material name','error');return;}
   var m=_editMatId?getMat(_editMatId):null;
   var isNew=!m;
-  if(isNew){m={id:nextId(materials),name:'',type:'finished',sku:'',designNo:'',unit:'pcs',vendors:[],imgs:[],desc:'',notes:'',techpackUrl:'',techpackFile:'',externalLinks:[],bom:[],cats:[],collections:[],variants:[]};materials.push(m);_editMatId=m.id;}
+  if(isNew){m={id:nextId(materials),name:'',type:'finished',sku:'',designNo:'',unit:'pcs',vendors:[],tags:[],imgs:[],desc:'',notes:'',techpackUrl:'',techpackFile:'',externalLinks:[],bom:[],cats:[],collections:[],variants:[]};materials.push(m);_editMatId=m.id;}
   m.name=name;
   m.sku=(document.getElementById('ci-sku')||{}).value||m.sku;
   m.designNo=(document.getElementById('ci-design')||{}).value||'';
@@ -2534,6 +2706,7 @@ function saveCreate(){
   m.unit=(document.getElementById('ci-unit')||{}).value||m.unit;
   m.desc=(document.getElementById('ci-desc')||{}).value||'';
   m.notes=(document.getElementById('ci-notes')||{}).value||'';
+  // Tags are saved live via addMatTag/removeMatTag — no extra read needed
   renderList();
   showToast(isNew?'Material created':'Material saved');
   goBack();
@@ -3681,6 +3854,75 @@ function openRequestDetail(id){
 function updateReqStatus(id,status){
   var r=orderRequests.find(function(x){return x.id===id;});if(r)r.status=status;
   goBack();renderOrderRequests('');showToast('Status updated');
+}
+
+// ===== REPORTS =====
+var _openReport=null;
+function renderReports(){
+  var el=document.getElementById('reports-body');if(!el)return;
+  var reportDefs=[
+    {id:'stock-summary',title:'Stock Summary',desc:'Total stock across all materials and variants',icon:'📦'},
+    {id:'low-stock',title:'Low Stock Alert',desc:'Variants at or below minimum quantity',icon:'⚠️'},
+    {id:'out-of-stock',title:'Out of Stock',desc:'Variants with zero quantity',icon:'🔴'},
+    {id:'vendor-wise',title:'Vendor-wise Inventory',desc:'Stock grouped by vendor',icon:'🏭'},
+    {id:'movement-log',title:'Stock Movement Log',desc:'All recent stock movements',icon:'📋'},
+    {id:'valuation',title:'Inventory Valuation',desc:'Total inventory value at cost price',icon:'💰'}
+  ];
+  var html='';
+  reportDefs.forEach(function(r){
+    var isOpen=_openReport===r.id;
+    html+='<div class="card" style="cursor:pointer;" onclick="toggleReport(\''+r.id+'\')">';
+    html+='<div class="row-between"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:22px;">'+r.icon+'</span><div><div class="fw-6 fs-14">'+r.title+'</div><div class="tx2 fs-12">'+r.desc+'</div></div></div>';
+    html+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" style="transform:rotate('+(isOpen?'90':'0')+'deg);transition:transform .2s;"><polyline points="9 18 15 12 9 6"/></svg>';
+    html+='</div>';
+    if(isOpen){html+='<div style="margin-top:12px;border-top:1px solid var(--br);padding-top:12px;">'+buildReportContent(r.id)+'</div>';}
+    html+='</div>';
+  });
+  el.innerHTML=html;
+}
+function toggleReport(id){_openReport=(_openReport===id?null:id);renderReports();}
+function buildReportContent(id){
+  if(id==='stock-summary'){
+    var rows='<table style="width:100%;border-collapse:collapse;font-size:12px;"><tr style="color:var(--tx2);"><th style="text-align:left;padding:4px 0;font-weight:600;">Material</th><th style="text-align:right;">Variants</th><th style="text-align:right;">Total Stock</th><th style="text-align:right;">Unit</th></tr>';
+    materials.forEach(function(m){var ts=totalStock(m);rows+='<tr style="border-top:1px solid var(--br);"><td style="padding:6px 0;">'+esc(m.name)+'</td><td style="text-align:right;">'+m.variants.length+'</td><td style="text-align:right;font-weight:600;color:'+(ts>0?'var(--g)':'var(--r)')+';">'+ts+'</td><td style="text-align:right;color:var(--tx2);">'+esc(m.unit)+'</td></tr>';});
+    return rows+'</table>';
+  }
+  if(id==='low-stock'){
+    var rows='<table style="width:100%;border-collapse:collapse;font-size:12px;"><tr style="color:var(--tx2);"><th style="text-align:left;padding:4px 0;font-weight:600;">Material / Variant</th><th style="text-align:right;">Qty</th><th style="text-align:right;">Min</th></tr>';
+    var found=false;
+    materials.forEach(function(m){m.variants.forEach(function(v){if(v.minqty>0&&v.qty<=v.minqty&&v.qty>0){found=true;rows+='<tr style="border-top:1px solid var(--br);"><td style="padding:6px 0;"><div class="fw-6">'+esc(m.name)+'</div><div class="tx2">'+esc(v.name)+'</div></td><td style="text-align:right;color:var(--a);font-weight:600;">'+v.qty+'</td><td style="text-align:right;color:var(--tx2);">'+v.minqty+'</td></tr>';}});});
+    if(!found)rows+='<tr><td colspan="3" style="padding:12px 0;text-align:center;color:var(--g);">✓ No low stock items</td></tr>';
+    return rows+'</table>';
+  }
+  if(id==='out-of-stock'){
+    var rows='<table style="width:100%;border-collapse:collapse;font-size:12px;"><tr style="color:var(--tx2);"><th style="text-align:left;padding:4px 0;font-weight:600;">Material / Variant</th><th style="text-align:right;">SKU</th></tr>';
+    var found=false;
+    materials.forEach(function(m){m.variants.forEach(function(v){if(v.qty<=0){found=true;rows+='<tr style="border-top:1px solid var(--br);"><td style="padding:6px 0;"><div class="fw-6">'+esc(m.name)+'</div><div class="tx2">'+esc(v.name)+'</div></td><td style="text-align:right;font-family:monospace;color:var(--tx2);">'+esc(v.sku)+'</td></tr>';}});});
+    if(!found)rows+='<tr><td colspan="2" style="padding:12px 0;text-align:center;color:var(--g);">✓ No out-of-stock items</td></tr>';
+    return rows+'</table>';
+  }
+  if(id==='vendor-wise'){
+    var byVendor={};
+    materials.forEach(function(m){(m.vendors||[]).forEach(function(v){var nm=v.name||'(no vendor)';byVendor[nm]=byVendor[nm]||[];byVendor[nm].push(m);});});
+    var html='';
+    Object.keys(byVendor).forEach(function(vn){var mats=byVendor[vn];html+='<div style="margin-bottom:10px;"><div class="fw-6 fs-13" style="color:var(--p);margin-bottom:4px;">'+esc(vn)+'</div>';mats.forEach(function(m){html+='<div style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid var(--br);font-size:12px;"><span>'+esc(m.name)+'</span><span class="fw-6">'+totalStock(m)+' '+esc(m.unit)+'</span></div>';});html+='</div>';});
+    return html||'<div class="tx3 text-center fs-13" style="padding:12px 0;">No vendor data</div>';
+  }
+  if(id==='movement-log'){
+    var rows='<table style="width:100%;border-collapse:collapse;font-size:12px;"><tr style="color:var(--tx2);"><th style="text-align:left;padding:4px 0;font-weight:600;">Date</th><th style="text-align:left;">Material</th><th style="text-align:left;">Type</th><th style="text-align:right;">Qty</th></tr>';
+    var allMvs=[];
+    materials.forEach(function(m){m.variants.forEach(function(v){(v.movements||[]).forEach(function(mv){allMvs.push(Object.assign({},mv,{matName:m.name,varName:v.name,unit:m.unit}));});});});
+    allMvs.sort(function(a,b){return b.date>a.date?1:-1;}).slice(0,20).forEach(function(mv){var d=mv.date?mv.date.split('-').reverse().join('/'):'-';rows+='<tr style="border-top:1px solid var(--br);"><td style="padding:5px 0;color:var(--tx2);">'+esc(d)+'</td><td><div class="fw-6">'+esc(mv.matName)+'</div><div class="tx2" style="font-size:11px;">'+esc(mv.varName)+'</div></td><td style="color:var(--tx2);">'+esc(mv.type)+'</td><td style="text-align:right;font-weight:600;">'+mv.qty+'</td></tr>';});
+    if(!allMvs.length)rows+='<tr><td colspan="4" style="padding:12px 0;text-align:center;color:var(--tx3);">No movements recorded</td></tr>';
+    return rows+'</table>';
+  }
+  if(id==='valuation'){
+    var total=0;var rows='<table style="width:100%;border-collapse:collapse;font-size:12px;"><tr style="color:var(--tx2);"><th style="text-align:left;padding:4px 0;font-weight:600;">Material</th><th style="text-align:right;">Stock</th><th style="text-align:right;">Avg Cost</th><th style="text-align:right;">Value</th></tr>';
+    materials.forEach(function(m){var ts=totalStock(m);var avgCost=m.variants.length?m.variants.reduce(function(s,v){return s+v.cost;},0)/m.variants.length:0;var val=ts*avgCost;total+=val;rows+='<tr style="border-top:1px solid var(--br);"><td style="padding:6px 0;">'+esc(m.name)+'</td><td style="text-align:right;">'+ts+'</td><td style="text-align:right;">₹'+Math.round(avgCost)+'</td><td style="text-align:right;font-weight:600;">₹'+Math.round(val)+'</td></tr>';});
+    rows+='<tr style="border-top:2px solid var(--p);"><td colspan="3" style="padding:8px 0;font-weight:700;">Total Inventory Value</td><td style="text-align:right;font-weight:700;color:var(--p);font-size:14px;">₹'+Math.round(total)+'</td></tr>';
+    return rows+'</table>';
+  }
+  return '';
 }
 
 // ===== SETTINGS =====
