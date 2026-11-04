@@ -99,11 +99,27 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
 .view-pill.on{background:var(--p);color:#fff;border-color:var(--p);}
 .view-pill.add{border-style:dashed;color:var(--tx3);}
 /* Material list rows */
-.mat-row{background:var(--sf);border-bottom:1px solid var(--br);padding:10px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;}
+.mat-row-wrap{background:var(--sf);border-bottom:1px solid var(--br);}
+.mat-row{padding:10px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;}
 .mat-row:active{background:var(--sf2);}
 .mat-thumb{width:46px;height:46px;border-radius:10px;flex-shrink:0;overflow:hidden;background:var(--pl);display:flex;align-items:center;justify-content:center;border:1px solid var(--br);}
 .mat-thumb img{width:100%;height:100%;object-fit:cover;}
 .mat-thumb-placeholder{font-size:17px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:-0.5px;}
+/* Expandable variant rows in list */
+.mat-var-list{display:none;border-top:1px solid var(--br);background:var(--sf2);}
+.mat-var-list.open{display:block;}
+.mat-var-item{display:flex;align-items:center;gap:10px;padding:9px 16px 9px 74px;cursor:pointer;border-bottom:1px solid var(--br);}
+.mat-var-item:last-child{border-bottom:none;}
+.mat-var-item:active{background:var(--pl);}
+.mat-vthumb{width:32px;height:32px;border-radius:7px;flex-shrink:0;overflow:hidden;background:var(--pl);display:flex;align-items:center;justify-content:center;border:1px solid var(--br);}
+.mat-vthumb img{width:100%;height:100%;object-fit:cover;}
+.mat-vthumb-ph{font-size:11px;font-weight:700;color:var(--p);text-transform:uppercase;}
+.mat-vinfo{flex:1;min-width:0;}
+.mat-vname{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mat-vsku{font-size:11px;color:var(--tx2);margin-top:1px;}
+.mat-vstock{font-size:13px;font-weight:600;color:var(--tx);flex-shrink:0;}
+.chev-btn{background:none;border:none;cursor:pointer;color:var(--tx3);padding:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .2s;}
+.chev-btn.open{transform:rotate(90deg);}
 .mat-info{flex:1;min-width:0;}
 .mat-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .mat-meta{font-size:12px;color:var(--tx2);margin-top:2px;}
@@ -1394,7 +1410,16 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function getMat(id){return materials.find(function(m){return m.id===id;});}
 function totalStock(m){return m.variants.reduce(function(s,v){return s+v.qty;},0);}
 function stockStatus(v){if(v.qty<=0)return 'out';if(v.minqty>0&&v.qty<=v.minqty)return 'low';return 'ok';}
+function varStockStatus(v){return stockStatus(v);}
 function matStockStatus(m){var s=m.variants.map(stockStatus);if(s.every(function(x){return x==='out';}))return 'out';if(s.some(function(x){return x==='low'||x==='out';}))return 'low';return 'ok';}
+function toggleVarList(e,matId){
+  e.stopPropagation();
+  var list=document.getElementById('mvl-'+matId);
+  var chev=document.getElementById('chev-'+matId);
+  if(!list)return;
+  var open=list.classList.toggle('open');
+  if(chev)chev.classList.toggle('open',open);
+}
 function typeChipClass(t){return t==='finished'?'chip-f':t==='raw'?'chip-r':'chip-p';}
 function todayStr(){return new Date().toISOString().slice(0,10);}
 function uuid(){return Math.random().toString(36).slice(2,9);}
@@ -1509,20 +1534,53 @@ function renderList(){
   arr.forEach(function(m){
     var ts=totalStock(m);
     var st=matStockStatus(m);
+    var prodImg=m.imgs&&m.imgs.length?m.imgs[0]:'';
+    var prodLetter=esc((m.name||'?').charAt(0));
+    var thumb=prodImg?'<img src="'+esc(prodImg)+'" alt="">':'<span class="mat-thumb-placeholder">'+prodLetter+'</span>';
+    var hasVars=m.variants&&m.variants.length>0;
+    var inCol=collections.some(function(c){return colHasMat(c,m.id)||(m.tags&&c.tagRules&&m.tags.some(function(t){return c.tagRules.indexOf(t)>=0;}));});
+    html+='<div class="mat-row-wrap" id="mrw-'+m.id+'">';
     html+='<div class="mat-row" onclick="openMDetail('+m.id+')">';
-    var thumb=m.imgs&&m.imgs.length?'<img src="'+esc(m.imgs[0])+'" alt="">':'<span class="mat-thumb-placeholder">'+esc((m.name||'?').charAt(0))+'</span>';
     html+='<div class="mat-thumb">'+thumb+'</div>';
     html+='<div class="mat-info">';
     html+='<div class="mat-name">'+esc(m.name)+'</div>';
-    html+='<div class="mat-meta">'+esc(m.sku)+' · '+m.variants.length+' variants</div>';
+    html+='<div class="mat-meta">'+esc(m.sku)+' · '+m.variants.length+' variant'+(m.variants.length===1?'':'s')+'</div>';
     html+='</div>';
     html+='<div class="mat-right">';
     html+='<span class="mat-qty">'+ts+' <span style="font-size:12px;color:var(--tx3);">'+esc(m.unit)+'</span></span>';
-    var inCol=collections.some(function(c){return colHasMat(c,m.id)||(m.tags&&c.tagRules&&m.tags.some(function(t){return c.tagRules.indexOf(t)>=0;}));});
     if(inCol)html+='<span style="width:8px;height:8px;border-radius:50%;background:var(--p);flex-shrink:0;display:inline-block;"></span>';
     html+='<span class="dot dot-'+st+'"></span>';
-    html+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+    if(hasVars){
+      html+='<button class="chev-btn" id="chev-'+m.id+'" onclick="toggleVarList(event,'+m.id+')" aria-label="Show variants">';
+      html+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>';
+      html+='</button>';
+    }else{
+      html+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+    }
     html+='</div></div>';
+    // Variant sub-rows (hidden by default)
+    if(hasVars){
+      html+='<div class="mat-var-list" id="mvl-'+m.id+'">';
+      m.variants.forEach(function(v,vi){
+        var vst=varStockStatus(v);
+        // Image fallback: variant own image → product first image → letter placeholder
+        var vImg=(v.images&&v.images.length)?v.images[0]:prodImg;
+        var vThumb=vImg?'<img src="'+esc(vImg)+'" alt="">':'<span class="mat-vthumb-ph">'+prodLetter+'</span>';
+        var swatch='';
+        if(v.color){swatch='<span class="var-swatch" style="background:'+esc(v.color)+';flex-shrink:0;"></span>';}
+        html+='<div class="mat-var-item" onclick="openVDetail('+m.id+','+vi+')">';
+        html+='<div class="mat-vthumb">'+vThumb+'</div>';
+        if(swatch)html+=swatch;
+        html+='<div class="mat-vinfo"><div class="mat-vname">'+esc(v.name)+'</div>';
+        html+='<div class="mat-vsku">'+esc(v.sku||'—')+'</div></div>';
+        html+='<span class="mat-vstock">'+v.qty+'</span>';
+        html+='<span class="dot dot-'+vst+'" style="margin-left:2px;"></span>';
+        html+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+        html+='</div>';
+      });
+      html+='</div>';
+    }
+    html+='</div>';
   });
   body.innerHTML=html;
 }
@@ -1580,13 +1638,20 @@ function openMDetail(matId){
 function renderMdImgStrip(m){
   var el=document.getElementById('md-img-strip');if(!el)return;
   var imgs=m.imgs||[];
-  if(!imgs.length){el.style.display='none';return;}
   el.style.display='flex';
   var html='';
-  imgs.forEach(function(src,i){
-    html+='<div class="mat-img-tile" onclick="viewMatImg('+i+')"><img src="'+esc(src)+'" alt=""></div>';
-  });
-  html+='<div class="mat-img-add" onclick="editCurrentMat()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Add</span></div>';
+  if(!imgs.length){
+    // Placeholder tile
+    var letter=esc((m.name||'?').charAt(0));
+    html+='<div class="mat-img-tile" style="display:flex;align-items:center;justify-content:center;cursor:default;">';
+    html+='<span style="font-size:28px;font-weight:700;color:var(--p);text-transform:uppercase;">'+letter+'</span>';
+    html+='</div>';
+  }else{
+    imgs.forEach(function(src,i){
+      html+='<div class="mat-img-tile" onclick="viewMatImg('+i+')"><img src="'+esc(src)+'" alt=""></div>';
+    });
+  }
+  html+='<div class="mat-img-add" onclick="editCurrentMat()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Add photo</span></div>';
   el.innerHTML=html;
 }
 function viewMatImg(i){/* TODO: lightbox */}
@@ -1658,9 +1723,15 @@ function buildMDVariants(m){
   var html='<div class="card">';
   html+='<div class="sect-hd"><h3>'+m.variants.length+' Variants</h3></div>';
   if(!m.variants.length)html+='<div class="empty-msg tx3">No variants yet</div>';
+  var prodImg=m.imgs&&m.imgs.length?m.imgs[0]:'';
+  var prodLetter=esc((m.name||'?').charAt(0));
   m.variants.forEach(function(v,i){
     var st=stockStatus(v);
-    html+='<div class="var-row"><div class="var-swatch" style="background:'+v.color+'"></div>';
+    var vImg=(v.images&&v.images.length)?v.images[0]:prodImg;
+    var vThumb=vImg?'<img src="'+esc(vImg)+'" alt="" style="width:100%;height:100%;object-fit:cover;">':'<span style="font-size:11px;font-weight:700;color:var(--p);text-transform:uppercase;">'+prodLetter+'</span>';
+    html+='<div class="var-row">';
+    html+='<div style="width:36px;height:36px;border-radius:8px;overflow:hidden;background:var(--pl);display:flex;align-items:center;justify-content:center;border:1px solid var(--br);flex-shrink:0;">'+vThumb+'</div>';
+    if(v.color)html+='<div class="var-swatch" style="background:'+esc(v.color)+'"></div>';
     html+='<div class="var-info"><div class="var-name">'+esc(v.name)+'</div><div class="var-sku">'+esc(v.sku)+'</div></div>';
     html+='<span class="fw-6 fs-13">'+v.qty+'</span><span class="dot dot-'+st+'"></span>';
     html+='<div class="var-actions"><button class="btn-sm" onclick="openVDetail('+m.id+','+i+')">Edit →</button>';
