@@ -156,8 +156,26 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
 .design-card-name{font-size:13px;font-weight:600;margin-bottom:4px;}
 .design-card-meta{font-size:12px;color:var(--tx2);margin-bottom:8px;}
 .design-card-acts{display:flex;gap:6px;}
-.label-prev{background:white;border:1px solid var(--br);border-radius:8px;padding:12px;margin:12px 0;font-size:12px;}
+.label-prev{background:white;border:1.5px solid var(--br);border-radius:8px;padding:12px;margin:12px 0;font-size:12px;box-shadow:0 2px 8px rgba(74,59,181,.07);}
 .queue-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--br);}
+/* Label designer screen */
+.ld-split{display:flex;flex-direction:column;flex:1;overflow:hidden;}
+.ld-controls{padding:16px;overflow-y:auto;flex:1;}
+.ld-preview-panel{background:var(--sf2);border-top:1.5px solid var(--br);padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.ld-preview-label{background:white;border:1.5px solid var(--br);border-radius:6px;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1);}
+.ld-preview-label .lf-name{font-size:11px;font-weight:700;text-align:center;padding:0 4px;}
+.ld-preview-label .lf-var{font-size:9px;color:#666;text-align:center;}
+.ld-preview-label .lf-mrp{font-size:10px;font-weight:700;}
+.ld-preview-label .lf-offer{font-size:9px;color:#E24B4A;}
+.ld-preview-label .lf-sku{font-size:8px;color:#999;font-family:monospace;}
+.ld-preview-label .lf-barcode{width:80%;height:20px;background:repeating-linear-gradient(90deg,#000 0,#000 2px,transparent 2px,transparent 4px);border-radius:1px;}
+.ld-preview-label .lf-design{font-size:8px;color:#aaa;}
+.ld-preview-label .lf-grid-info{font-size:8px;color:#bbb;position:absolute;bottom:3px;right:4px;}
+/* Generate labels screen */
+.gl-step{background:var(--sf2);border-radius:12px;padding:14px;margin-bottom:12px;border:1.5px solid var(--br);}
+.gl-step-hd{font-size:13px;font-weight:700;margin-bottom:10px;color:var(--tx);}
+.gl-prod-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--br);}
+.gl-prod-row:last-child{border-bottom:none;}
 /* Collections */
 .col-card{background:var(--sf);border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer;}
 .col-card:active{background:var(--sf2);}
@@ -407,12 +425,72 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
   <div class="tab-strip"><div class="tab-inner">
     <button class="tab on" onclick="setLTab(0)">Designs</button>
     <button class="tab" onclick="setLTab(1)" id="l-tab-queue">Queue</button>
+    <button class="tab" onclick="setLTab(2)">Generate</button>
   </div></div>
   <div id="lt-0" class="body"></div>
   <div id="lt-1" class="body" style="display:none;"></div>
+  <div id="lt-2" class="body" style="display:none;"></div>
 </div>
 
-<!-- s-label-preview: Label Preview -->
+<!-- s-label-design: Label Design Editor (full screen) -->
+<div id="s-label-design" class="screen">
+  <div class="tb">
+    <button class="tb-bk" onclick="goBack()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <h1 id="ldes-title">New Design</h1>
+    <button class="tb-act" onclick="saveLabelDesignScreen()">Save</button>
+  </div>
+  <div class="ld-split">
+    <!-- Left: controls -->
+    <div class="ld-controls">
+      <div class="card">
+        <div class="fld"><label>Design Name</label><input type="text" id="ldes-name" placeholder="e.g. Standard Tag" oninput="ldPreview()"></div>
+        <div class="fld">
+          <label>Label Size</label>
+          <select id="ldes-size" onchange="ldSizeChange()">
+            <option value="50x25">50 × 25 mm — small hang tag</option>
+            <option value="38x25">38 × 25 mm — mini sticker</option>
+            <option value="100x50">100 × 50 mm — large barcode label</option>
+            <option value="62x29">62 × 29 mm — Brother QL standard</option>
+            <option value="custom">Custom size…</option>
+          </select>
+        </div>
+        <div id="ldes-custom-size" style="display:none;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div class="fld"><label>Width (mm)</label><input type="number" id="ldes-cw" value="50" min="10" max="300" oninput="ldPreview()"></div>
+            <div class="fld"><label>Height (mm)</label><input type="number" id="ldes-ch" value="25" min="10" max="300" oninput="ldPreview()"></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="fld"><label>Columns</label><input type="number" id="ldes-cols" value="1" min="1" max="6" oninput="ldPreview()"></div>
+          <div class="fld"><label>Rows</label><input type="number" id="ldes-rows" value="1" min="1" max="10" oninput="ldPreview()"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="fld"><label>Fields to print</label>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+            <label class="row-between" style="cursor:pointer;"><span class="fs-14">Product Name</span><input type="checkbox" id="ldes-f-name" checked onchange="ldPreview()"></label>
+            <label class="row-between" style="cursor:pointer;"><span class="fs-14">Variant / Size</span><input type="checkbox" id="ldes-f-var" checked onchange="ldPreview()"></label>
+            <label class="row-between" style="cursor:pointer;"><span class="fs-14">MRP</span><input type="checkbox" id="ldes-f-mrp" checked onchange="ldPreview()"></label>
+            <label class="row-between" style="cursor:pointer;"><span class="fs-14">Offer Price</span><input type="checkbox" id="ldes-f-offer" onchange="ldPreview()"></label>
+            <label class="row-between" style="cursor:pointer;"><span class="fs-14">SKU</span><input type="checkbox" id="ldes-f-sku" onchange="ldPreview()"></label>
+            <label class="row-between" style="cursor:pointer;"><span class="fs-14">Barcode</span><input type="checkbox" id="ldes-f-barcode" onchange="ldPreview()"></label>
+            <label class="row-between" style="cursor:pointer;"><span class="fs-14">Design No.</span><input type="checkbox" id="ldes-f-design" onchange="ldPreview()"></label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Bottom: live preview panel -->
+    <div class="ld-preview-panel">
+      <div style="font-size:12px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;width:100%;text-align:center;">Live Preview</div>
+      <div id="ldes-preview-wrap" style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;"></div>
+      <div id="ldes-size-info" class="tx3 fs-12"></div>
+    </div>
+  </div>
+</div>
+
+<!-- s-label-preview: Label Preview (single variant) -->
 <div id="s-label-preview" class="screen">
   <div class="tb">
     <button class="tb-bk" onclick="goBack()">
@@ -424,7 +502,8 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
   <div class="body">
     <div id="lp-label" style="display:flex;justify-content:center;padding:24px 0;"></div>
     <div class="card">
-      <div class="fld"><label>Printer</label><select><option>Default Printer</option><option>Label Printer 1</option></select></div>
+      <div class="fld"><label>Select Design</label><select id="lp-design-sel" onchange="lpRebuild()"></select></div>
+      <div class="fld"><label>Printer</label><select id="lp-printer"><option>Default Printer</option><option>Label Printer 1 (Barcode)</option><option>Label Printer 2</option></select></div>
       <div class="fld">
         <label>Quantity</label>
         <div class="stepper">
@@ -434,7 +513,7 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
         </div>
       </div>
     </div>
-    <button class="btn-p" onclick="doPrint()">🖨 Print Labels</button>
+    <button class="btn-p" onclick="doPrint()">🖨 Send to Printer</button>
   </div>
 </div>
 
@@ -733,32 +812,7 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
   </div>
 </div>
 
-<!-- sh-labeldesign: Label Design Editor -->
-<div id="sh-labeldesign" class="sh-ov" onclick="if(event.target===this)closeSheet('sh-labeldesign')">
-  <div class="sh">
-    <div class="sh-handle"></div>
-    <div class="sh-hd"><h3>Label Design</h3></div>
-    <div class="sh-body">
-      <div class="fld"><label>Design Name</label><input type="text" id="ld-name" placeholder="e.g. Standard Tag"></div>
-      <div class="fld"><label>Size</label>
-        <select id="ld-size"><option value="50x25">50×25 mm</option><option value="38x25">38×25 mm</option><option value="100x50">100×50 mm</option></select>
-      </div>
-      <div class="fld">
-        <label>Fields to print</label>
-        <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--tx);font-weight:400;"><input type="checkbox" id="ld-f-name" checked> Product Name</label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--tx);font-weight:400;"><input type="checkbox" id="ld-f-var" checked> Variant</label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--tx);font-weight:400;"><input type="checkbox" id="ld-f-mrp" checked> MRP</label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--tx);font-weight:400;"><input type="checkbox" id="ld-f-offer"> Offer Price</label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--tx);font-weight:400;"><input type="checkbox" id="ld-f-sku"> SKU</label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--tx);font-weight:400;"><input type="checkbox" id="ld-f-barcode"> Barcode</label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--tx);font-weight:400;"><input type="checkbox" id="ld-f-design"> Design No.</label>
-        </div>
-      </div>
-      <button class="btn-p" onclick="saveLabelDesign()">Save Design</button>
-    </div>
-  </div>
-</div>
+<!-- sh-labeldesign removed: Label design is now a full screen (s-label-design) -->
 
 <!-- sh-addlabel: Add to Label Queue -->
 <div id="sh-addlabel" class="sh-ov" onclick="if(event.target===this)closeSheet('sh-addlabel')">
@@ -1865,95 +1919,280 @@ function selectMatItem(matId,varIdx){
 
 
 // ===== LABELS =====
+// ===== LABELS =====
+// Size map: name → {w,h} in mm → px for preview (96dpi: 1mm≈3.78px; we scale to fit mobile)
+var LABEL_SIZES={
+  '50x25':{w:50,h:25,label:'50 × 25 mm'},
+  '38x25':{w:38,h:25,label:'38 × 25 mm'},
+  '100x50':{w:100,h:50,label:'100 × 50 mm'},
+  '62x29':{w:62,h:29,label:'62 × 29 mm'},
+  'custom':{w:50,h:25,label:'Custom'}
+};
 function renderLabels(){
   setLTab(0);
   var qtab=document.getElementById('l-tab-queue');
-  if(qtab)qtab.textContent='Queue'+(labelQueue.length?'  ('+labelQueue.length+')':'');
+  if(qtab)qtab.textContent='Queue'+(labelQueue.length?' ('+labelQueue.length+')':'');
 }
 function setLTab(n){
   document.querySelectorAll('#s-labels .tab').forEach(function(t,i){t.classList.toggle('on',i===n);});
-  for(var i=0;i<2;i++){var el=document.getElementById('lt-'+i);if(el)el.style.display=i===n?'flex':'none';}
-  if(n===0)renderLabelDesigns();else renderLabelQueue();
+  for(var i=0;i<3;i++){var el=document.getElementById('lt-'+i);if(el)el.style.display=i===n?'flex':'none';}
+  if(n===0)renderLabelDesigns();
+  else if(n===1)renderLabelQueue();
+  else renderGenerateTab();
 }
 function renderLabelDesigns(){
   var el=document.getElementById('lt-0');if(!el)return;
   if(!labelDesigns.length){
-    el.innerHTML='<div class="empty"><div class="empty-icon">🖨</div><div class="empty-msg">No label designs yet</div><button class="btn-p" style="margin-top:16px;width:auto;padding:10px 24px;" onclick="openSheet(\'sh-labeldesign\')">+ Create Design</button></div>';
+    el.innerHTML='<div class="empty"><div class="empty-icon">🖨</div><div class="empty-msg">No label designs yet</div><button class="btn-p" style="margin-top:16px;width:auto;padding:10px 24px;" onclick="openLabelDesignScreen(null)">+ Create Design</button></div>';
     return;
   }
   var html='<div class="design-grid">';
   labelDesigns.forEach(function(d,i){
-    html+='<div class="design-card"><div class="design-card-name">'+esc(d.name)+'</div><div class="design-card-meta">'+esc(d.size)+(d.fields?' · '+d.fields.length+' fields':'')+'</div><div class="design-card-acts"><button class="btn-sm" onclick="editLabelDesign('+i+')">Edit</button><button class="btn-sm" onclick="dupLabelDesign('+i+')">Dup</button><button class="btn-sm" style="color:var(--r);background:var(--rl);" onclick="delLabelDesign('+i+')">Del</button></div></div>';
+    var sz=LABEL_SIZES[d.size]||{label:d.size};
+    html+='<div class="design-card" onclick="openLabelDesignScreen('+i+')">';
+    // mini visual preview on card
+    html+='<div style="display:flex;justify-content:center;margin-bottom:8px;">'+buildLabelSVG(d,null,null,120,60)+'</div>';
+    html+='<div class="design-card-name">'+esc(d.name)+'</div>';
+    html+='<div class="design-card-meta">'+esc(sz.label)+(d.cols>1||d.rows>1?' · '+d.cols+'×'+d.rows:'')+'</div>';
+    html+='<div class="design-card-acts">';
+    html+='<button class="btn-sm" onclick="event.stopPropagation();dupLabelDesign('+i+')">Dup</button>';
+    html+='<button class="btn-sm" style="color:var(--r);background:var(--rl);" onclick="event.stopPropagation();delLabelDesign('+i+')">Del</button>';
+    html+='</div></div>';
   });
-  html+='</div><button class="btn-s" style="margin-top:12px;" onclick="openSheet(\'sh-labeldesign\')">+ New Design</button>';
+  html+='</div><button class="btn-s" style="margin-top:12px;" onclick="openLabelDesignScreen(null)">+ New Design</button>';
   el.innerHTML=html;
 }
 function renderLabelQueue(){
   var el=document.getElementById('lt-1');if(!el)return;
   var qtab=document.getElementById('l-tab-queue');
   if(qtab)qtab.textContent='Queue'+(labelQueue.length?' ('+labelQueue.length+')':'');
-  if(!labelQueue.length){el.innerHTML='<div class="empty"><div class="empty-icon">🗂</div><div class="empty-msg">Queue is empty. Add labels from material variants.</div></div>';return;}
-  var html='<div class="card"><div class="sect-hd"><h3>'+labelQueue.length+' labels</h3><button class="btn-ghost" onclick="labelQueue=[];renderLabelQueue();">Clear all</button></div>';
+  if(!labelQueue.length){el.innerHTML='<div class="empty"><div class="empty-icon">🗂</div><div class="empty-msg">Queue is empty. Use Generate tab or add from a variant.</div></div>';return;}
+  var totalPcs=labelQueue.reduce(function(s,q){return s+q.qty;},0);
+  var html='<div class="card"><div class="sect-hd"><h3>'+labelQueue.length+' jobs · '+totalPcs+' pcs</h3><button class="btn-ghost" onclick="labelQueue=[];renderLabelQueue();">Clear all</button></div>';
   labelQueue.forEach(function(q,i){
     var m=getMat(q.matId);var v=m&&m.variants[q.varIdx];
     var d=labelDesigns.find(function(x){return x.id===q.designId;});
-    html+='<div class="queue-row"><div class="flex-1"><div class="fw-6 fs-13">'+(m?esc(m.name):'')+' · '+(v?esc(v.name):'')+'</div><div class="tx2 fs-12">'+(d?esc(d.name):'Design')+'</div></div>';
-    html+='<span class="fw-6">×'+q.qty+'</span><button class="btn-ghost" style="color:var(--r);" onclick="labelQueue.splice('+i+',1);renderLabelQueue();">×</button></div>';
+    html+='<div class="queue-row">';
+    if(d)html+='<div style="flex-shrink:0;">'+buildLabelSVG(d,m,v,56,28)+'</div>';
+    html+='<div class="flex-1"><div class="fw-6 fs-13">'+(m?esc(m.name):'')+' · '+(v?esc(v.name):'')+'</div><div class="tx2 fs-12">'+(d?esc(d.name):'Design')+'</div></div>';
+    html+='<div class="stepper" style="transform:scale(.85);transform-origin:right center;">';
+    html+='<button onclick="queueQtyAdj('+i+',-1)">−</button><span>'+q.qty+'</span><button onclick="queueQtyAdj('+i+',1)">+</button></div>';
+    html+='<button class="btn-ghost" style="color:var(--r);" onclick="labelQueue.splice('+i+',1);renderLabelQueue();">×</button></div>';
   });
-  html+='</div><button class="btn-p" onclick="printAll()">🖨 Print All</button>';
+  html+='</div>';
+  html+='<div class="card"><div class="fld"><label>Printer</label><select id="q-printer"><option>Default Printer</option><option>Label Printer 1 (Barcode)</option><option>Label Printer 2</option></select></div></div>';
+  html+='<button class="btn-p" onclick="printAll()">🖨 Print All ('+totalPcs+' pcs)</button>';
   el.innerHTML=html;
 }
-function saveLabelDesign(){
-  var nm=document.getElementById('ld-name').value.trim();if(!nm){showToast('Enter design name','error');return;}
-  var fields=[];
-  ['name','var','mrp','offer','sku','barcode','design'].forEach(function(f){if(document.getElementById('ld-f-'+f)&&document.getElementById('ld-f-'+f).checked)fields.push(f);});
-  var d={id:uuid(),name:nm,size:document.getElementById('ld-size').value,fields:fields};
-  labelDesigns.push(d);closeSheet('sh-labeldesign');renderLabelDesigns();showToast('Design saved');
+function queueQtyAdj(i,d){labelQueue[i].qty=Math.max(1,(labelQueue[i].qty||1)+d);renderLabelQueue();}
+
+// ===== LABEL DESIGN SCREEN =====
+var _ldesEditIdx=null;
+function openLabelDesignScreen(idx){
+  _ldesEditIdx=idx;
+  var d=idx!==null?labelDesigns[idx]:null;
+  document.getElementById('ldes-title').textContent=d?'Edit Design':'New Design';
+  document.getElementById('ldes-name').value=d?d.name:'';
+  var sizeVal=d?d.size:'50x25';
+  document.getElementById('ldes-size').value=sizeVal;
+  document.getElementById('ldes-cols').value=d?d.cols||1:1;
+  document.getElementById('ldes-rows').value=d?d.rows||1:1;
+  document.getElementById('ldes-custom-size').style.display=sizeVal==='custom'?'block':'none';
+  if(sizeVal==='custom'&&d){
+    var parts=d.customW?[d.customW,d.customH]:[50,25];
+    document.getElementById('ldes-cw').value=parts[0];
+    document.getElementById('ldes-ch').value=parts[1];
+  }
+  ['name','var','mrp','offer','sku','barcode','design'].forEach(function(f){
+    var el=document.getElementById('ldes-f-'+f);
+    if(el)el.checked=d?d.fields.indexOf(f)>=0:['name','var','mrp'].indexOf(f)>=0;
+  });
+  ldPreview();
+  pushScreen('s-label-design');
 }
-function editLabelDesign(i){
-  var d=labelDesigns[i];if(!d)return;
-  document.getElementById('ld-name').value=d.name;
-  document.getElementById('ld-size').value=d.size;
-  openSheet('sh-labeldesign');
+function ldSizeChange(){
+  var v=document.getElementById('ldes-size').value;
+  document.getElementById('ldes-custom-size').style.display=v==='custom'?'block':'none';
+  ldPreview();
+}
+function ldGetSize(){
+  var v=document.getElementById('ldes-size').value;
+  if(v==='custom'){return{w:parseInt(document.getElementById('ldes-cw').value)||50,h:parseInt(document.getElementById('ldes-ch').value)||25,label:'Custom'};}
+  return LABEL_SIZES[v]||LABEL_SIZES['50x25'];
+}
+function ldGetFields(){
+  var fields=[];
+  ['name','var','mrp','offer','sku','barcode','design'].forEach(function(f){var el=document.getElementById('ldes-f-'+f);if(el&&el.checked)fields.push(f);});
+  return fields;
+}
+function ldPreview(){
+  var cols=Math.max(1,Math.min(6,parseInt(document.getElementById('ldes-cols').value)||1));
+  var rows=Math.max(1,Math.min(10,parseInt(document.getElementById('ldes-rows').value)||1));
+  var sz=ldGetSize();
+  var fields=ldGetFields();
+  var d={name:document.getElementById('ldes-name').value||'Preview',size:document.getElementById('ldes-size').value,fields:fields,cols:cols,rows:rows,customW:sz.w,customH:sz.h};
+  // Sample data for preview
+  var sampleMat={name:'Cotton Kurta',designNo:'DES-001'};
+  var sampleVar={name:'M · Blue',sku:'CK-M-BLU',mrp:1299,offer:999,barcode:'8901234567890'};
+  var wrap=document.getElementById('ldes-preview-wrap');if(!wrap)return;
+  var info=document.getElementById('ldes-size-info');if(info)info.textContent=sz.label+' · '+cols+' col × '+rows+' row';
+  var html='';
+  var pxW=Math.min(140,Math.round(sz.w*2.2));var pxH=Math.round(sz.h*2.2);
+  for(var r=0;r<rows;r++){
+    for(var c=0;c<cols;c++){
+      html+=buildLabelSVG(d,sampleMat,sampleVar,pxW,pxH);
+    }
+  }
+  wrap.innerHTML=html;
+}
+function buildLabelSVG(design,mat,v,pxW,pxH){
+  // Render a label as an inline SVG/HTML div
+  var fields=design.fields||[];
+  var html='<div class="ld-preview-label" style="width:'+pxW+'px;height:'+pxH+'px;padding:'+(pxH>35?'4px':'2px')+' '+(pxW>60?'5px':'3px')+';gap:1px;">';
+  var fs=Math.max(6,Math.round(pxH/5.5));
+  var fss=Math.max(5,Math.round(pxH/7));
+  if(fields.indexOf('name')>=0)html+='<div class="lf-name" style="font-size:'+fs+'px;">'+esc(mat?mat.name:'Product Name')+'</div>';
+  if(fields.indexOf('var')>=0)html+='<div class="lf-var" style="font-size:'+fss+'px;">'+esc(v?v.name:'M · Blue')+'</div>';
+  if(fields.indexOf('mrp')>=0)html+='<div class="lf-mrp" style="font-size:'+fs+'px;">MRP ₹'+(v?v.mrp:'1,299')+'</div>';
+  if(fields.indexOf('offer')>=0)html+='<div class="lf-offer" style="font-size:'+fss+'px;">₹'+(v?v.offer:'999')+'</div>';
+  if(fields.indexOf('sku')>=0)html+='<div class="lf-sku" style="font-size:'+fss+'px;">'+(v?esc(v.sku):'SKU-001')+'</div>';
+  if(fields.indexOf('barcode')>=0&&pxH>22)html+='<div class="lf-barcode" style="width:80%;height:'+Math.round(pxH*0.22)+'px;"></div>';
+  if(fields.indexOf('design')>=0)html+='<div class="lf-design" style="font-size:'+(fss-1)+'px;">'+(mat&&mat.designNo?esc(mat.designNo):'DES-001')+'</div>';
+  html+='</div>';
+  return html;
+}
+function saveLabelDesignScreen(){
+  var nm=document.getElementById('ldes-name').value.trim();
+  if(!nm){showToast('Enter a design name','error');return;}
+  var sz=ldGetSize();
+  var d={id:_ldesEditIdx!==null&&labelDesigns[_ldesEditIdx]?labelDesigns[_ldesEditIdx].id:uuid(),name:nm,size:document.getElementById('ldes-size').value,fields:ldGetFields(),cols:parseInt(document.getElementById('ldes-cols').value)||1,rows:parseInt(document.getElementById('ldes-rows').value)||1,customW:sz.w,customH:sz.h};
+  if(_ldesEditIdx!==null)labelDesigns[_ldesEditIdx]=d;
+  else labelDesigns.push(d);
+  showToast('Design saved');goBack();
 }
 function dupLabelDesign(i){var d=labelDesigns[i];if(!d)return;labelDesigns.push(Object.assign({},d,{id:uuid(),name:d.name+' (copy)'}));renderLabelDesigns();}
 function delLabelDesign(i){if(confirm('Delete this design?')){labelDesigns.splice(i,1);renderLabelDesigns();}}
-function openAddLabel(matId,vi){
-  _alMatId=matId;_alVi=vi;_alQty=1;
-  var m=getMat(matId);var v=m&&m.variants[vi];
-  document.getElementById('al-info').textContent=(m?m.name:'')+' · '+(v?v.name:'');
+
+// ===== GENERATE LABELS TAB =====
+var _glDesignId=null;var _glProducts=[];// [{matId,varIdx,qty}]
+function renderGenerateTab(){
+  var el=document.getElementById('lt-2');if(!el)return;
   var html='';
-  if(!labelDesigns.length)html='<div class="tx3 fs-13">No designs yet. <button class="btn-ghost" onclick="closeSheet(\'sh-addlabel\');openSheet(\'sh-labeldesign\');">Create one</button></div>';
-  labelDesigns.forEach(function(d){html+='<label style="display:flex;align-items:center;gap:8px;padding:8px;border:1.5px solid var(--br);border-radius:10px;cursor:pointer;"><input type="radio" name="al-design" value="'+d.id+'"> <div><div class="fw-6 fs-13">'+esc(d.name)+'</div><div class="tx2 fs-12">'+esc(d.size)+'</div></div></label>';});
-  document.getElementById('al-designs').innerHTML=html;
-  document.getElementById('al-qty').textContent='1';
-  openSheet('sh-addlabel');
+  // Step 1: Select design
+  html+='<div class="gl-step"><div class="gl-step-hd">Step 1 — Select design</div>';
+  if(!labelDesigns.length){html+='<div class="tx3 fs-13">No designs yet. <button class="btn-ghost" onclick="openLabelDesignScreen(null)">Create a design</button> first.</div>';}
+  else{
+    html+='<div style="display:flex;flex-direction:column;gap:6px;">';
+    labelDesigns.forEach(function(d){
+      var sz=LABEL_SIZES[d.size]||{label:d.size};
+      var sel=_glDesignId===d.id;
+      html+='<label style="display:flex;align-items:center;gap:10px;padding:10px;border:1.5px solid '+(sel?'var(--p)':'var(--br)')+';border-radius:10px;cursor:pointer;background:'+(sel?'var(--pl)':'transparent')+';"><input type="radio" name="gl-design" value="'+d.id+'"'+(sel?' checked':'')+' onchange="glSelectDesign(\''+d.id+'\')">';
+      html+=buildLabelSVG(d,null,null,56,28);
+      html+='<div><div class="fw-6 fs-13">'+esc(d.name)+'</div><div class="tx2 fs-12">'+esc(sz.label)+(d.cols>1||d.rows>1?' · '+d.cols+'×'+d.rows:'')+'</div></div></label>';
+    });
+    html+='</div>';
+  }
+  html+='</div>';
+  // Step 2: Select products + qty
+  html+='<div class="gl-step"><div class="gl-step-hd">Step 2 — Select products & quantity</div>';
+  html+='<div style="display:flex;flex-direction:column;gap:4px;" id="gl-prod-list">';
+  materials.forEach(function(m){
+    m.variants.forEach(function(v,vi){
+      var existing=_glProducts.find(function(p){return p.matId===m.id&&p.varIdx===vi;});
+      var qty=existing?existing.qty:0;
+      html+='<div class="gl-prod-row">';
+      var d=_glDesignId?labelDesigns.find(function(x){return x.id===_glDesignId;}):null;
+      if(d)html+='<div style="flex-shrink:0;">'+buildLabelSVG(d,m,v,44,22)+'</div>';
+      html+='<div class="flex-1"><div class="fw-6 fs-13">'+esc(m.name)+'</div><div class="tx2 fs-12">'+esc(v.name)+' · Stock: '+v.qty+'</div></div>';
+      html+='<div class="stepper" style="transform:scale(.82);transform-origin:right center;">';
+      html+='<button onclick="glQtyAdj('+m.id+','+vi+',-1)">−</button><span id="glq-'+m.id+'-'+vi+'">'+qty+'</span><button onclick="glQtyAdj('+m.id+','+vi+',1)">+</button></div>';
+      html+='</div>';
+    });
+  });
+  html+='</div></div>';
+  // Step 3: Preview + print
+  html+='<div class="gl-step" id="gl-print-step"><div class="gl-step-hd">Step 3 — Preview & print</div>';
+  var totalPcs=_glProducts.reduce(function(s,p){return s+p.qty;},0);
+  if(!_glDesignId||!totalPcs){
+    html+='<div class="tx3 fs-13">Select a design and add quantities above to preview.</div>';
+  }else{
+    var d=labelDesigns.find(function(x){return x.id===_glDesignId;});
+    html+='<div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;padding:12px;background:var(--sf);border-radius:8px;margin-bottom:12px;">';
+    var shown=0;
+    _glProducts.forEach(function(p){
+      if(!p.qty)return;
+      var m=getMat(p.matId);var v=m&&m.variants[p.varIdx];
+      var showQty=Math.min(p.qty,6);
+      for(var i=0;i<showQty;i++)html+=buildLabelSVG(d,m,v,56,28);
+      shown+=showQty;
+    });
+    if(totalPcs>shown)html+='<div class="tx3 fs-13" style="display:flex;align-items:center;">+'+( totalPcs-shown)+' more</div>';
+    html+='</div>';
+    html+='<div class="fld"><label>Printer</label><select id="gl-printer"><option>Default Printer</option><option>Label Printer 1 (Barcode)</option><option>Label Printer 2</option></select></div>';
+    html+='<div class="tx2 fs-13 mb-12">Total: '+totalPcs+' label'+( totalPcs===1?'':'s')+' across '+_glProducts.filter(function(p){return p.qty>0;}).length+' variants</div>';
+    html+='<button class="btn-p" onclick="glPrint()">🖨 Generate & Print ('+totalPcs+' pcs)</button>';
+  }
+  html+='</div>';
+  el.innerHTML=html;
 }
-function alQtyAdj(d){_alQty=Math.max(1,(_alQty||1)+d);document.getElementById('al-qty').textContent=_alQty;}
-function addToQueueConfirm(){
-  var sel=document.querySelector('input[name="al-design"]:checked');
-  if(!sel){showToast('Select a design','error');return;}
-  labelQueue.push({matId:_alMatId,varIdx:_alVi,designId:sel.value,qty:_alQty||1});
-  closeSheet('sh-addlabel');showToast('Added to queue');
+function glSelectDesign(id){_glDesignId=id;renderGenerateTab();}
+function glQtyAdj(matId,vi,d){
+  var existing=_glProducts.find(function(p){return p.matId===matId&&p.varIdx===vi;});
+  if(existing){existing.qty=Math.max(0,existing.qty+d);}
+  else if(d>0){_glProducts.push({matId:matId,varIdx:vi,qty:1});}
+  var el=document.getElementById('glq-'+matId+'-'+vi);
+  if(el)el.textContent=existing?existing.qty:0;
+  // Update step 3 live
+  var step=document.getElementById('gl-print-step');
+  if(step){renderGenerateTab();}
+}
+function glPrint(){
+  var totalPcs=_glProducts.filter(function(p){return p.qty>0;}).reduce(function(s,p){return s+p.qty;},0);
+  if(!totalPcs){showToast('Add quantities first','error');return;}
+  if(!_glDesignId){showToast('Select a design first','error');return;}
+  // Add to queue
+  _glProducts.filter(function(p){return p.qty>0;}).forEach(function(p){
+    labelQueue.push({matId:p.matId,varIdx:p.varIdx,designId:_glDesignId,qty:p.qty});
+  });
+  _glProducts=[];_glDesignId=null;
+  showToast('Sent '+totalPcs+' labels to printer 🖨');
+  setLTab(1);// jump to Queue tab
+}
+
+// ===== LABEL PREVIEW (single variant) =====
+function openAddLabel(matId,vi){
+  // Opens Generate tab pre-focused on this variant
+  _glProducts=_glProducts.filter(function(p){return !(p.matId===matId&&p.varIdx===vi);});
+  _glProducts.push({matId:matId,varIdx:vi,qty:1});
+  navTo('s-labels');setTimeout(function(){setLTab(2);},50);
 }
 function openLabelPreview(matId,vi,designId){
-  _lpMatId=matId;_lpVi=vi;_lpDesignId=designId;_lpQty=1;
+  _lpMatId=matId;_lpVi=vi;_lpDesignId=designId||(_ldesEditIdx!==null&&labelDesigns[_ldesEditIdx]?labelDesigns[_ldesEditIdx].id:labelDesigns[0]&&labelDesigns[0].id);_lpQty=1;
   document.getElementById('lp-qty').textContent='1';
-  var m=getMat(matId);var v=m&&m.variants[vi];
-  var d=labelDesigns.find(function(x){return x.id===designId;});
-  var html='<div class="label-prev" style="width:200px;">';
-  if(d&&d.fields&&d.fields.indexOf('name')>=0)html+='<div style="font-weight:700;font-size:14px;">'+esc(m?m.name:'')+'</div>';
-  if(d&&d.fields&&d.fields.indexOf('var')>=0)html+='<div style="font-size:12px;">'+esc(v?v.name:'')+'</div>';
-  if(d&&d.fields&&d.fields.indexOf('mrp')>=0)html+='<div style="font-size:13px;">MRP: '+fmtMoney(v?v.mrp:0)+'</div>';
-  if(d&&d.fields&&d.fields.indexOf('offer')>=0)html+='<div style="font-size:13px;color:#E24B4A;">Offer: '+fmtMoney(v?v.offer:0)+'</div>';
-  if(d&&d.fields&&d.fields.indexOf('sku')>=0)html+='<div style="font-size:11px;color:#888;">'+esc(v?v.sku:'')+'</div>';
-  html+='</div>';
-  document.getElementById('lp-label').innerHTML=html;
+  // Populate design selector
+  var sel=document.getElementById('lp-design-sel');
+  if(sel){sel.innerHTML='';labelDesigns.forEach(function(d){var o=document.createElement('option');o.value=d.id;o.textContent=d.name;if(d.id===_lpDesignId)o.selected=true;sel.appendChild(o);});}
+  lpRebuild();
   pushScreen('s-label-preview');
 }
+function lpRebuild(){
+  var dId=document.getElementById('lp-design-sel')&&document.getElementById('lp-design-sel').value;
+  _lpDesignId=dId||_lpDesignId;
+  var m=getMat(_lpMatId);var v=m&&m.variants[_lpVi];
+  var d=labelDesigns.find(function(x){return x.id===_lpDesignId;});
+  var el=document.getElementById('lp-label');if(!el)return;
+  if(!d){el.innerHTML='<div class="tx3 fs-13">No design selected</div>';return;}
+  el.innerHTML=buildLabelSVG(d,m,v,180,90);
+}
 function lpQtyAdj(d){_lpQty=Math.max(1,(_lpQty||1)+d);document.getElementById('lp-qty').textContent=_lpQty;}
-function doPrint(){showToast('Sent to printer ('+_lpQty+' copies)','info');}
-function printAll(){showToast('Sent '+labelQueue.length+' labels to printer','info');}
+function doPrint(){
+  labelQueue.push({matId:_lpMatId,varIdx:_lpVi,designId:_lpDesignId,qty:_lpQty||1});
+  showToast('Sent to printer ('+(_lpQty||1)+' copies) 🖨');
+}
+function printAll(){
+  var totalPcs=labelQueue.reduce(function(s,q){return s+q.qty;},0);
+  showToast('Sent '+labelQueue.length+' jobs / '+totalPcs+' pcs to printer 🖨');
+}
 
 // ===== COLLECTIONS =====
 function renderCollections(){
