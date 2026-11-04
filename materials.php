@@ -1141,7 +1141,12 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
   <div class="body">
     <div class="card">
       <div class="fld"><label>Name</label><input type="text" id="nc-name" placeholder="Collection name"></div>
-      <div class="fld"><label>Description</label><textarea id="nc-desc" rows="3" placeholder="Optional description"></textarea></div>
+      <div class="fld"><label>Description</label><textarea id="nc-desc" rows="2" placeholder="Optional description"></textarea></div>
+      <div class="fld">
+        <label>Colour</label>
+        <div id="nc-colors" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;"></div>
+        <input type="hidden" id="nc-color" value="#4A3BB5">
+      </div>
       <div class="fld">
         <label>Visibility</label>
         <div style="display:flex;gap:8px;margin-top:6px;">
@@ -1151,7 +1156,19 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
         <input type="hidden" id="nc-visibility" value="private">
       </div>
     </div>
-    <button class="btn-p" onclick="saveCollection()">Save Collection</button>
+    <div class="card">
+      <div class="sect-hd"><h3>Auto-include by tags</h3></div>
+      <p class="tx2 fs-12" style="margin-bottom:10px;">Materials with any of these tags will automatically appear in this collection.</p>
+      <div id="nc-tag-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+      <div style="display:flex;gap:8px;"><input id="nc-tag-inp" type="text" placeholder="Add tag rule…" style="flex:1;font-size:13px;" onkeydown="if(event.key===\'Enter\')addColTag();"><button class="btn-sm" onclick="addColTag()">Add</button></div>
+      <div id="nc-tag-preview" style="margin-top:10px;"></div>
+    </div>
+    <div class="card">
+      <div class="sect-hd"><h3>Manual products</h3></div>
+      <p class="tx2 fs-12" style="margin-bottom:10px;">Also include these specific materials.</p>
+      <div id="nc-manual-list"></div>
+    </div>
+    <button class="btn-p" onclick="saveCollection()" style="margin-bottom:16px;">Save Collection</button>
   </div>
 </div>
 
@@ -3585,8 +3602,13 @@ function renderCollections(){
   collections.forEach(function(c){
     var cnt=(c.manualIds||[]).length;
     var vis=c.visibility==='public'?'🌐 Public':'🔒 Private';
-    html+='<div class="col-card" onclick="openCDetail('+c.id+')">';
-    html+='<div class="col-card-hd"><div class="flex-1"><div class="fw-6 fs-14">'+esc(c.name)+'</div><div class="tx2 fs-12">'+cnt+' products · '+vis+'</div></div></div>';
+    var accentColor=c.color||'#4A3BB5';
+    var tagMatched=materials.filter(function(m){return m.tags&&c.tagRules&&c.tagRules.length&&c.tagRules.some(function(t){return m.tags.indexOf(t)>=0;});}).length;
+    var totalMats=(c.manualIds||[]).length+tagMatched;
+    html+='<div class="col-card" onclick="openCDetail('+c.id+')" style="border-top:4px solid '+accentColor+';">';
+    html+='<div class="col-card-hd"><div class="flex-1"><div class="fw-6 fs-14">'+esc(c.name)+'</div><div class="tx2 fs-12">'+totalMats+' products';
+    if((c.tagRules||[]).length)html+=' · '+c.tagRules.length+' tag rule'+(c.tagRules.length>1?'s':'');
+    html+=' · '+vis+'</div></div></div>';
     if(c.desc)html+='<div class="tx2 fs-13 mb-8">'+esc(c.desc)+'</div>';
     html+='</div>';
   });
@@ -3597,32 +3619,103 @@ function setColVisibility(v){
   document.getElementById('nc-vis-private').className='chip'+(v==='private'?' on':'');
   document.getElementById('nc-vis-public').className='chip'+(v==='public'?' on':'');
 }
+var _COL_COLORS=['#4A3BB5','#1D9E75','#E24B4A','#BA7517','#185FA5','#9C27B0','#E91E63','#607D8B'];
+var _ncTagRules=[];
+var _ncManualIds=[];
+function renderColColorRow(selected){
+  var el=document.getElementById('nc-colors');if(!el)return;
+  var html='';
+  _COL_COLORS.forEach(function(c){
+    html+='<button onclick="selectColColor(\''+c+'\')" style="width:28px;height:28px;border-radius:50%;background:'+c+';border:3px solid '+(selected===c?'var(--tx)':'transparent')+';cursor:pointer;" title="'+c+'"></button>';
+  });
+  el.innerHTML=html;
+}
+function selectColColor(c){
+  document.getElementById('nc-color').value=c;
+  renderColColorRow(c);
+}
+function renderNcTagChips(){
+  var el=document.getElementById('nc-tag-chips');if(!el)return;
+  var html='';
+  _ncTagRules.forEach(function(tag,i){
+    html+='<span style="display:inline-flex;align-items:center;gap:4px;background:var(--pl);color:var(--p);border:1.5px solid var(--pb);border-radius:16px;padding:3px 10px;font-size:12px;font-weight:500;">'+esc(tag)+'<button onclick="removeColTag('+i+')" style="background:none;border:none;color:var(--p);cursor:pointer;font-size:14px;line-height:1;">×</button></span>';
+  });
+  el.innerHTML=html;
+  // Show preview: which materials match
+  var matched=materials.filter(function(m){return m.tags&&_ncTagRules.some(function(t){return m.tags.indexOf(t)>=0;});});
+  var prev=document.getElementById('nc-tag-preview');
+  if(prev){
+    if(_ncTagRules.length&&matched.length){
+      prev.innerHTML='<div class="tx2 fs-12">Auto-matching <strong>'+matched.length+'</strong> material'+(matched.length>1?'s':'')+':</div>'+matched.map(function(m){return '<div class="fs-12" style="padding:2px 0;">• '+esc(m.name)+'</div>';}).join('');
+    } else if(_ncTagRules.length) {
+      prev.innerHTML='<div class="tx2 fs-12">No materials match these tags yet.</div>';
+    } else {
+      prev.innerHTML='';
+    }
+  }
+}
+function addColTag(){
+  var inp=document.getElementById('nc-tag-inp');if(!inp)return;
+  var tag=inp.value.trim();if(!tag)return;
+  if(_ncTagRules.indexOf(tag)<0)_ncTagRules.push(tag);
+  inp.value='';renderNcTagChips();
+}
+function removeColTag(i){_ncTagRules.splice(i,1);renderNcTagChips();}
+function renderNcManualList(){
+  var el=document.getElementById('nc-manual-list');if(!el)return;
+  var html='';
+  materials.forEach(function(m){
+    var checked=_ncManualIds.indexOf(m.id)>=0;
+    // tag-matched means already auto-included
+    var tagMatched=_ncTagRules.length&&m.tags&&_ncTagRules.some(function(t){return m.tags.indexOf(t)>=0;});
+    html+='<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--br);">';
+    html+='<input type="checkbox" id="nm-'+m.id+'" '+(checked?'checked':'')+' onchange="toggleNcManual('+m.id+',this.checked)" style="width:16px;height:16px;">';
+    html+='<label for="nm-'+m.id+'" style="flex:1;font-size:13px;cursor:pointer;">'+esc(m.name)+'</label>';
+    if(tagMatched)html+='<span class="chip chip-p" style="font-size:10px;">tag</span>';
+    html+='</div>';
+  });
+  if(!materials.length)html='<div class="tx3 fs-13">No materials yet</div>';
+  el.innerHTML=html;
+}
+function toggleNcManual(id,checked){
+  if(checked){if(_ncManualIds.indexOf(id)<0)_ncManualIds.push(id);}
+  else{_ncManualIds=_ncManualIds.filter(function(x){return x!==id;});}
+}
 function openNewCollection(){
   _editColId=null;
+  _ncTagRules=[];
+  _ncManualIds=[];
   document.getElementById('nc-title').textContent='New Collection';
   document.getElementById('nc-name').value='';
   document.getElementById('nc-desc').value='';
+  document.getElementById('nc-color').value='#4A3BB5';
   setColVisibility('private');
   pushScreen('s-newcol');
+  setTimeout(function(){renderColColorRow('#4A3BB5');renderNcTagChips();renderNcManualList();},50);
 }
 function editCurrentCollection(){
   if(!_editColId)return;
   var c=collections.find(function(x){return x.id===_editColId;});if(!c)return;
+  _ncTagRules=(c.tagRules||[]).slice();
+  _ncManualIds=(c.manualIds||[]).slice();
   document.getElementById('nc-title').textContent='Edit Collection';
   document.getElementById('nc-name').value=c.name;
   document.getElementById('nc-desc').value=c.desc||'';
+  document.getElementById('nc-color').value=c.color||'#4A3BB5';
   setColVisibility(c.visibility||'private');
   pushScreen('s-newcol');
+  setTimeout(function(){renderColColorRow(c.color||'#4A3BB5');renderNcTagChips();renderNcManualList();},50);
 }
 function saveCollection(){
   var nm=document.getElementById('nc-name').value.trim();if(!nm){showToast('Enter collection name','error');return;}
   var desc=document.getElementById('nc-desc').value;
   var visibility=document.getElementById('nc-visibility').value||'private';
+  var color=document.getElementById('nc-color').value||'#4A3BB5';
   if(_editColId){
     var c=collections.find(function(x){return x.id===_editColId;});
-    if(c){c.name=nm;c.desc=desc;c.visibility=visibility;}
+    if(c){c.name=nm;c.desc=desc;c.visibility=visibility;c.color=color;c.tagRules=_ncTagRules.slice();c.manualIds=_ncManualIds.slice();}
   } else {
-    collections.push({id:nextId(collections),name:nm,desc:desc,visibility:visibility,tagRules:[],manualIds:[],previewLink:'',previewEnabled:false,previewExpiry:''});
+    collections.push({id:nextId(collections),name:nm,desc:desc,visibility:visibility,color:color,tagRules:_ncTagRules.slice(),manualIds:_ncManualIds.slice(),previewLink:'',previewEnabled:false,previewExpiry:''});
   }
   goBack();renderCollections();showToast('Collection saved');
 }
