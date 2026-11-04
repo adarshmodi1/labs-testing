@@ -99,13 +99,22 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
 .view-pill.on{background:var(--p);color:#fff;border-color:var(--p);}
 .view-pill.add{border-style:dashed;color:var(--tx3);}
 /* Material list rows */
-.mat-row{background:var(--sf);border-bottom:1px solid var(--br);padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;}
+.mat-row{background:var(--sf);border-bottom:1px solid var(--br);padding:10px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;}
 .mat-row:active{background:var(--sf2);}
+.mat-thumb{width:46px;height:46px;border-radius:10px;flex-shrink:0;overflow:hidden;background:var(--pl);display:flex;align-items:center;justify-content:center;border:1px solid var(--br);}
+.mat-thumb img{width:100%;height:100%;object-fit:cover;}
+.mat-thumb-placeholder{font-size:17px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:-0.5px;}
 .mat-info{flex:1;min-width:0;}
 .mat-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .mat-meta{font-size:12px;color:var(--tx2);margin-top:2px;}
 .mat-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
 .mat-qty{font-size:14px;font-weight:600;}
+/* Product image strip on detail */
+.mat-img-strip{background:var(--sf);border-bottom:1px solid var(--br);padding:12px 16px;display:flex;gap:10px;align-items:center;overflow-x:auto;}
+.mat-img-tile{width:72px;height:72px;border-radius:10px;overflow:hidden;flex-shrink:0;border:1px solid var(--br);background:var(--sf2);cursor:pointer;}
+.mat-img-tile img{width:100%;height:100%;object-fit:cover;}
+.mat-img-add{width:72px;height:72px;border-radius:10px;border:1.5px dashed var(--br2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;flex-shrink:0;color:var(--tx3);font-size:11px;}
+.mat-img-add svg{opacity:.6;}
 /* Var rows */
 .var-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--br);}
 .var-row:last-child{border-bottom:none;}
@@ -402,12 +411,14 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
     <button class="tab" onclick="setVTab(2)">BOM & TechPack</button>
     <button class="tab" onclick="setVTab(3)">Costing</button>
     <button class="tab" onclick="setVTab(4)">Production</button>
+    <button class="tab" onclick="setVTab(5)">Images</button>
   </div></div>
   <div id="vt-0" class="body"></div>
   <div id="vt-1" class="body" style="display:none;"></div>
   <div id="vt-2" class="body" style="display:none;"></div>
   <div id="vt-3" class="body" style="display:none;"></div>
   <div id="vt-4" class="body" style="display:none;"></div>
+  <div id="vt-5" class="body" style="display:none;"></div>
 </div>
 
 <!-- s-mdetail: Material Detail -->
@@ -423,6 +434,7 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
     </button>
   </div>
   <div class="mat-action-bar" id="md-action-bar"></div>
+  <div class="mat-img-strip" id="md-img-strip"></div>
   <div class="tab-strip"><div class="tab-inner">
     <button class="tab on" onclick="setMTab(0)">Variants</button>
     <button class="tab" onclick="setMTab(1)">Supply</button>
@@ -1440,7 +1452,8 @@ function renderList(){
     var ts=totalStock(m);
     var st=matStockStatus(m);
     html+='<div class="mat-row" onclick="openMDetail('+m.id+')">';
-    html+='<div><span class="chip '+typeChipClass(m.type)+'" style="font-size:11px;">'+m.type.charAt(0).toUpperCase()+'</span></div>';
+    var thumb=m.imgs&&m.imgs.length?'<img src="'+esc(m.imgs[0])+'" alt="">':'<span class="mat-thumb-placeholder">'+esc((m.name||'?').charAt(0))+'</span>';
+    html+='<div class="mat-thumb">'+thumb+'</div>';
     html+='<div class="mat-info">';
     html+='<div class="mat-name">'+esc(m.name)+'</div>';
     html+='<div class="mat-meta">'+esc(m.sku)+' · '+m.variants.length+' variants</div>';
@@ -1500,9 +1513,23 @@ function openMDetail(matId){
   var m=getMat(matId);
   document.getElementById('md-title').textContent=m.name;
   renderMdActionBar(m);
+  renderMdImgStrip(m);
   setMTab(0);
   pushScreen('s-mdetail');
 }
+function renderMdImgStrip(m){
+  var el=document.getElementById('md-img-strip');if(!el)return;
+  var imgs=m.imgs||[];
+  if(!imgs.length){el.style.display='none';return;}
+  el.style.display='flex';
+  var html='';
+  imgs.forEach(function(src,i){
+    html+='<div class="mat-img-tile" onclick="viewMatImg('+i+')"><img src="'+esc(src)+'" alt=""></div>';
+  });
+  html+='<div class="mat-img-add" onclick="editCurrentMat()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Add</span></div>';
+  el.innerHTML=html;
+}
+function viewMatImg(i){/* TODO: lightbox */}
 function renderMdActionBar(m){
   var ts=totalStock(m);
   var st=matStockStatus(m);
@@ -1539,7 +1566,7 @@ function quickPurchaseOrder(){
   if(m){document.getElementById('mi-vendor').value=m.vendors&&m.vendors[0]?m.vendors[0].name:'';}
   pushScreen('s-mat-in');
 }
-function addCurrentMatToCollection(){closeSheet('sh-mat-actions');showToast('Select a collection first','info');}
+function addCurrentMatToCollection(){closeSheet('sh-mat-actions');setMTab(4);}
 function addCurrentMatToListing(){closeSheet('sh-mat-actions');openListingDetail(null,_mdMatId);}
 function duplicateCurrentMat(){
   closeSheet('sh-mat-actions');
@@ -1620,14 +1647,49 @@ function buildMDListings(m){
 }
 function buildMDCollections(m){
   var mCols=collections.filter(function(c){return c.manualIds&&c.manualIds.indexOf(m.id)>=0;});
-  var html='<div class="card"><div class="sect-hd"><h3>Collections</h3></div>';
+  var html='<div class="card"><div class="sect-hd"><h3>Collections</h3><button class="btn-sm" onclick="addMatToCollectionPicker()">+ Add to Collection</button></div>';
   if(!mCols.length)html+='<div class="tx3 text-center fs-13" style="padding:16px 0;">Not in any collection yet</div>';
   mCols.forEach(function(c){
     var vis=c.visibility==='public'?'🌐':'🔒';
-    html+='<div class="loc-row"><span class="fw-6 fs-13 flex-1">'+vis+' '+esc(c.name)+'</span><button class="btn-sm" onclick="openCDetail('+c.id+')">View</button></div>';
+    html+='<div class="loc-row"><span class="fw-6 fs-13 flex-1">'+vis+' '+esc(c.name)+'</span>';
+    html+='<div style="display:flex;gap:6px;"><button class="btn-sm" onclick="openCDetail('+c.id+')">View</button>';
+    html+='<button class="btn-ghost" style="color:var(--r);font-size:13px;" onclick="removeMatFromCollection('+c.id+')">Remove</button></div>';
+    html+='</div>';
   });
   html+='</div>';
+  if(collections.length){
+    html+='<div class="card"><div class="sect-hd"><h3>All Collections</h3></div>';
+    collections.forEach(function(c){
+      var already=mCols.find(function(x){return x.id===c.id;});
+      var vis=c.visibility==='public'?'🌐':'🔒';
+      html+='<div class="loc-row"><span class="fw-6 fs-13 flex-1">'+vis+' '+esc(c.name)+'</span>';
+      if(already){
+        html+='<span class="chip chip-g" style="font-size:11px;">Added</span>';
+      } else {
+        html+='<button class="btn-sm" onclick="addMatToCol('+c.id+')">+ Add</button>';
+      }
+      html+='</div>';
+    });
+    html+='</div>';
+  }
   return html;
+}
+function addMatToCollectionPicker(){
+  if(!collections.length){showToast('No collections yet — create one first','info');navTo('s-collections');return;}
+  setMTab(4);// already on this tab, the All Collections list below handles it
+}
+function addMatToCol(colId){
+  var c=collections.find(function(x){return x.id===colId;});if(!c)return;
+  c.manualIds=c.manualIds||[];
+  if(c.manualIds.indexOf(_mdMatId)<0)c.manualIds.push(_mdMatId);
+  setMTab(4);
+  showToast('Added to '+c.name);
+}
+function removeMatFromCollection(colId){
+  var c=collections.find(function(x){return x.id===colId;});if(!c)return;
+  c.manualIds=c.manualIds.filter(function(id){return id!==_mdMatId;});
+  setMTab(4);
+  showToast('Removed from '+c.name);
 }
 
 
@@ -1641,7 +1703,7 @@ function openVDetail(matId,vi){
 }
 function setVTab(n){
   document.querySelectorAll('#s-vdetail .tab').forEach(function(t,i){t.classList.toggle('on',i===n);});
-  for(var i=0;i<5;i++){var el=document.getElementById('vt-'+i);if(el)el.style.display=i===n?'flex':'none';}
+  for(var i=0;i<6;i++){var el=document.getElementById('vt-'+i);if(el)el.style.display=i===n?'flex':'none';}
   var m=getMat(_editMatId);var v=m&&m.variants[_editVi];if(!m||!v)return;
   var el=document.getElementById('vt-'+n);if(!el)return;
   if(n===0)el.innerHTML=buildVPricing(m,_editVi);
@@ -1649,6 +1711,7 @@ function setVTab(n){
   else if(n===2)el.innerHTML=buildVBOM(m,_editVi);
   else if(n===3)el.innerHTML=buildVCosting(m,_editVi);
   else if(n===4)el.innerHTML=buildVProduction(m,_editVi);
+  else if(n===5)el.innerHTML=buildVImages(m,_editVi);
 }
 function saveVDetail(){
   var m=getMat(_editMatId);var v=m&&m.variants[_editVi];if(!m||!v)return;
@@ -1694,6 +1757,64 @@ function buildVPricing(m,vi){
     '<button class="btn-sm" onclick="setBarToSku()">Use SKU as Barcode</button>'+
     '<button class="btn-sm" onclick="openAddLabel('+m.id+','+vi+')">🏷 Print Label</button>'+
     '</div></div>';
+}
+function buildVImages(m,vi){
+  var v=m.variants[vi];
+  var imgs=v.images||[];
+  var matImgs=m.imgs||[];
+  var html='<div class="card"><div class="sect-hd"><h3>Variant Images</h3><button class="btn-sm" onclick="showVImgForm()">+ Add URL</button></div>';
+  html+='<div id="vi-imgs" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">';
+  imgs.forEach(function(src,i){
+    html+='<div style="position:relative;width:80px;height:80px;border-radius:10px;overflow:hidden;border:1px solid var(--br);">'+
+      '<img src="'+esc(src)+'" style="width:100%;height:100%;object-fit:cover;" alt="">'+
+      '<button onclick="removeVImg('+i+')" style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.55);border:none;color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>'+
+      '</div>';
+  });
+  if(!imgs.length)html+='<div class="tx3 fs-13" style="padding:4px 0 8px;">No variant-specific images. Product images will be used by default.</div>';
+  html+='</div>';
+  // Inline add-url form
+  html+='<div id="vi-add-form" style="display:none;background:var(--sf2);border:1px solid #e0dff5;border-radius:10px;padding:12px;margin-top:4px;">'+
+    '<div class="fld" style="margin-bottom:10px;"><label style="font-size:12px;margin-bottom:4px;">Image URL</label>'+
+    '<input id="vi-img-url" type="url" placeholder="https://…" style="font-size:14px;" onkeydown="if(event.key===\'Enter\')addVImg();"></div>'+
+    '<div style="display:flex;gap:8px;">'+
+    '<button class="btn-sm" style="flex:1;" onclick="addVImg()">Add Image</button>'+
+    '<button class="btn-ghost" style="font-size:13px;padding:6px 10px;" onclick="hideVImgForm()">Cancel</button>'+
+    '</div></div>';
+  html+='</div>';
+  if(matImgs.length){
+    html+='<div class="card"><div class="sect-hd"><h3>Product Images</h3><span class="tx3 fs-12">Shared across all variants</span></div>';
+    html+='<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+    matImgs.forEach(function(src){
+      html+='<div style="width:60px;height:60px;border-radius:8px;overflow:hidden;border:1px solid var(--br);opacity:.7;"><img src="'+esc(src)+'" style="width:100%;height:100%;object-fit:cover;" alt=""></div>';
+    });
+    html+='</div></div>';
+  }
+  return html;
+}
+function showVImgForm(){
+  var el=document.getElementById('vi-add-form');if(!el)return;
+  el.style.display='block';
+  var inp=document.getElementById('vi-img-url');if(inp)setTimeout(function(){inp.focus();},50);
+}
+function hideVImgForm(){
+  var el=document.getElementById('vi-add-form');if(el)el.style.display='none';
+  var u=document.getElementById('vi-img-url');if(u)u.value='';
+}
+function addVImg(){
+  var urlEl=document.getElementById('vi-img-url');
+  var url=(urlEl?urlEl.value:'').trim();
+  if(!url){if(urlEl)urlEl.focus();showToast('Enter an image URL','info');return;}
+  var m=getMat(_editMatId);var v=m&&m.variants[_editVi];if(!v)return;
+  v.images=v.images||[];
+  v.images.push(url);
+  hideVImgForm();
+  setVTab(5);
+}
+function removeVImg(i){
+  var m=getMat(_editMatId);var v=m&&m.variants[_editVi];if(!v)return;
+  v.images=v.images||[];
+  v.images.splice(i,1);
+  setVTab(5);
 }
 function vCalcDisc(){
   var mrp=parseFloat(document.getElementById('vp-mrp').value)||0;
@@ -2013,7 +2134,27 @@ function setCTab(n){
   else if(n===2)el.innerHTML=buildMovementHTML(m);
 }
 function buildInfoHTML(m){
-  var html='<div class="card">'+
+  // Images section
+  var imgs=m.imgs||[];
+  var html='<div class="card"><div class="sect-hd"><h3>Product Images</h3><button class="btn-sm" onclick="addMatImageUrl()">+ Add URL</button></div>';
+  html+='<div id="ci-imgs" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">';
+  imgs.forEach(function(src,i){
+    html+='<div style="position:relative;width:72px;height:72px;border-radius:10px;overflow:hidden;border:1px solid var(--br);">'+
+      '<img src="'+esc(src)+'" style="width:100%;height:100%;object-fit:cover;" alt="">'+
+      '<button onclick="removeMatImg('+i+')" style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.55);border:none;color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>'+
+      '</div>';
+  });
+  if(!imgs.length)html+='<div class="tx3 fs-13" style="padding:4px 0 8px;">No images yet — add a URL or upload via the Catalog Generator.</div>';
+  html+='</div>';
+  html+='<div id="ci-img-add-wrap" style="display:none;background:var(--sf2);border:1px solid #e0dff5;border-radius:10px;padding:12px;margin-top:4px;">'+
+    '<div class="fld" style="margin-bottom:10px;"><label style="font-size:12px;margin-bottom:4px;">Image URL</label>'+
+    '<input id="ci-img-url-inp" type="url" placeholder="https://…" style="font-size:14px;" onkeydown="if(event.key===\'Enter\')confirmAddMatImg();"></div>'+
+    '<div style="display:flex;gap:8px;">'+
+    '<button class="btn-sm" style="flex:1;" onclick="confirmAddMatImg()">Add Image</button>'+
+    '<button class="btn-ghost" style="font-size:13px;padding:6px 10px;" onclick="addMatImageUrl()">Cancel</button>'+
+    '</div></div>';
+  html+='</div>';
+  html+='<div class="card">'+
     '<div class="fld"><label>Name *</label><input type="text" id="ci-name" value="'+esc(m.name)+'" placeholder="Material name" oninput="autoSku()"></div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
     '<div class="fld"><label>SKU</label><input type="text" id="ci-sku" value="'+esc(m.sku)+'" placeholder="Auto-generated"></div>'+
@@ -2079,6 +2220,25 @@ function buildInfoHTML(m){
   html+='<button class="btn-sm" style="width:100%;margin-top:8px;" onclick="generateVariants()">⚡ Generate combinations</button>';
   html+='</div>';
   return html;
+}
+function addMatImageUrl(){
+  var wrap=document.getElementById('ci-img-add-wrap');
+  if(wrap){wrap.style.display=wrap.style.display==='none'?'block':'none';var inp=document.getElementById('ci-img-url-inp');if(inp&&wrap.style.display==='block')setTimeout(function(){inp.focus();},50);}
+}
+function confirmAddMatImg(){
+  var urlEl=document.getElementById('ci-img-url-inp');
+  var url=(urlEl?urlEl.value:'').trim();
+  if(!url){if(urlEl)urlEl.focus();showToast('Enter an image URL','info');return;}
+  var m=_editMatId?getMat(_editMatId):null;if(!m)return;
+  m.imgs=m.imgs||[];
+  m.imgs.push(url);
+  setCTab(0);
+}
+function removeMatImg(i){
+  var m=_editMatId?getMat(_editMatId):null;if(!m)return;
+  m.imgs=m.imgs||[];
+  m.imgs.splice(i,1);
+  setCTab(0);
 }
 function autoSku(){
   var nm=(document.getElementById('ci-name')||{}).value||'';
