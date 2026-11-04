@@ -470,24 +470,32 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
       <div class="card">
         <div class="fld"><label>Design Name</label><input type="text" id="ldes-name" placeholder="e.g. Standard Tag" oninput="ldPreview()"></div>
         <div class="fld">
-          <label>Label Size</label>
-          <select id="ldes-size" onchange="ldSizeChange()">
-            <option value="50x25">50 × 25 mm — small hang tag</option>
-            <option value="38x25">38 × 25 mm — mini sticker</option>
-            <option value="100x50">100 × 50 mm — large barcode label</option>
-            <option value="62x29">62 × 29 mm — Brother QL standard</option>
-            <option value="custom">Custom size…</option>
+          <label>Printer Model</label>
+          <select id="ldes-printer" onchange="ldPrinterChange()">
+            <option value="tsc203">TSC / Xprinter / TVS (203 DPI, 4″ roll)</option>
+            <option value="zebra203">Zebra ZD230 / ZD420 (203 DPI, 4″ roll)</option>
+            <option value="zebra300">Zebra ZD420 (300 DPI, 4″ roll)</option>
+            <option value="honeywell">Honeywell PC42d (203 DPI, 4″ roll)</option>
+            <option value="brotherql">Brother QL-800 / QL-820 (300 DPI, 62mm roll)</option>
+            <option value="dymo">DYMO LabelWriter 450 / 550 (600 DPI, 56mm roll)</option>
+            <option value="generic">Generic / Other</option>
+          </select>
+        </div>
+        <div id="ldes-printer-info" style="background:var(--pl);border-radius:8px;padding:8px 10px;margin-bottom:12px;font-size:12px;color:var(--pt);display:none;"></div>
+        <div class="fld">
+          <label>Roll Configuration</label>
+          <select id="ldes-rollcfg" onchange="ldRollCfgChange()">
           </select>
         </div>
         <div id="ldes-custom-size" style="display:none;">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <div class="fld"><label>Width (mm)</label><input type="number" id="ldes-cw" value="50" min="10" max="300" oninput="ldPreview()"></div>
-            <div class="fld"><label>Height (mm)</label><input type="number" id="ldes-ch" value="25" min="10" max="300" oninput="ldPreview()"></div>
+            <div class="fld"><label>Label Width (mm)</label><input type="number" id="ldes-cw" value="50" min="10" max="110" oninput="ldPreview()"></div>
+            <div class="fld"><label>Label Height (mm)</label><input type="number" id="ldes-ch" value="25" min="10" max="300" oninput="ldPreview()"></div>
           </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <div class="fld"><label>Columns</label><input type="number" id="ldes-cols" value="1" min="1" max="6" oninput="ldPreview()"></div>
-          <div class="fld"><label>Rows</label><input type="number" id="ldes-rows" value="1" min="1" max="10" oninput="ldPreview()"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div class="fld"><label>Columns</label><input type="number" id="ldes-cols" value="1" min="1" max="6" oninput="ldPreview()"></div>
+            <div class="fld"><label>Rows</label><input type="number" id="ldes-rows" value="1" min="1" max="20" oninput="ldPreview()"></div>
+          </div>
         </div>
       </div>
       <div class="card">
@@ -2207,7 +2215,109 @@ function selectMatItem(matId,varIdx){
 
 // ===== LABELS =====
 // ===== LABELS =====
-// Size map: name → {w,h} in mm → px for preview (96dpi: 1mm≈3.78px; we scale to fit mobile)
+
+// ---- Printer profiles ----
+// rollConfigs: each entry = one physical roll/configuration the printer supports
+//   id: unique key stored in design
+//   label: shown in dropdown
+//   labelW, labelH: label size in mm
+//   cols: number of labels across the roll (across the width)
+//   maxRows: max labels per page/sheet (continuous rolls = high number)
+//   rollW: total roll width in mm (for reference)
+//   continuous: true = roll printer (rows limited only by stock)
+var PRINTER_PROFILES={
+  tsc203:{
+    name:'TSC / Xprinter / TVS',
+    detail:'203 DPI · 8 dots/mm · Max roll width: 108mm · Speed: 4–5 ips\nCovers: TSC TTP-244 Pro, TTP-244ME, TH240, MB241 · Xprinter XP-365B, XP-470B · TVS-e LP 46 DLite',
+    dpi:203, maxRollW:108, continuous:true,
+    rollConfigs:[
+      {id:'tsc_38x25_1up',  label:'38 × 25 mm · 1-across (40mm roll)',  labelW:38,  labelH:25, cols:1, maxRows:9999},
+      {id:'tsc_50x25_1up',  label:'50 × 25 mm · 1-across (56mm roll)',  labelW:50,  labelH:25, cols:1, maxRows:9999},
+      {id:'tsc_50x25_2up',  label:'50 × 25 mm · 2-across (104mm roll)', labelW:50,  labelH:25, cols:2, maxRows:9999},
+      {id:'tsc_38x25_2up',  label:'38 × 25 mm · 2-across (80mm roll)',  labelW:38,  labelH:25, cols:2, maxRows:9999},
+      {id:'tsc_25x15_1up',  label:'25 × 15 mm · 1-across (30mm roll)',  labelW:25,  labelH:15, cols:1, maxRows:9999},
+      {id:'tsc_25x15_3up',  label:'25 × 15 mm · 3-across (80mm roll)',  labelW:25,  labelH:15, cols:3, maxRows:9999},
+      {id:'tsc_100x50_1up', label:'100 × 50 mm · 1-across (104mm roll)',labelW:100, labelH:50, cols:1, maxRows:9999},
+      {id:'tsc_75x50_1up',  label:'75 × 50 mm · 1-across (80mm roll)',  labelW:75,  labelH:50, cols:1, maxRows:9999},
+      {id:'tsc_30x20_2up',  label:'30 × 20 mm · 2-across (63mm roll)',  labelW:30,  labelH:20, cols:2, maxRows:9999},
+      {id:'tsc_custom',     label:'Custom size…',                        labelW:50,  labelH:25, cols:1, maxRows:9999, custom:true}
+    ]
+  },
+  zebra203:{
+    name:'Zebra ZD230 / ZD420',
+    detail:'203 DPI · Max roll width: 104mm · Speed: 4–6 ips\nCovers: Zebra ZD230, ZD420 (203 DPI mode)',
+    dpi:203, maxRollW:104, continuous:true,
+    rollConfigs:[
+      {id:'z2_38x25_1up',  label:'38 × 25 mm · 1-across (40mm roll)',  labelW:38,  labelH:25, cols:1, maxRows:9999},
+      {id:'z2_50x25_1up',  label:'50 × 25 mm · 1-across (56mm roll)',  labelW:50,  labelH:25, cols:1, maxRows:9999},
+      {id:'z2_50x25_2up',  label:'50 × 25 mm · 2-across (104mm roll)', labelW:50,  labelH:25, cols:2, maxRows:9999},
+      {id:'z2_38x25_2up',  label:'38 × 25 mm · 2-across (80mm roll)',  labelW:38,  labelH:25, cols:2, maxRows:9999},
+      {id:'z2_100x50_1up', label:'100 × 50 mm · 1-across (104mm roll)',labelW:100, labelH:50, cols:1, maxRows:9999},
+      {id:'z2_custom',     label:'Custom size…',                        labelW:50,  labelH:25, cols:1, maxRows:9999, custom:true}
+    ]
+  },
+  zebra300:{
+    name:'Zebra ZD420 (300 DPI)',
+    detail:'300 DPI · Max roll width: 104mm · Speed: 6 ips\nHigher resolution — good for small text and fine barcodes',
+    dpi:300, maxRollW:104, continuous:true,
+    rollConfigs:[
+      {id:'z3_38x25_1up',  label:'38 × 25 mm · 1-across (40mm roll)',  labelW:38,  labelH:25, cols:1, maxRows:9999},
+      {id:'z3_50x25_1up',  label:'50 × 25 mm · 1-across (56mm roll)',  labelW:50,  labelH:25, cols:1, maxRows:9999},
+      {id:'z3_50x25_2up',  label:'50 × 25 mm · 2-across (104mm roll)', labelW:50,  labelH:25, cols:2, maxRows:9999},
+      {id:'z3_25x15_3up',  label:'25 × 15 mm · 3-across (80mm roll)',  labelW:25,  labelH:15, cols:3, maxRows:9999},
+      {id:'z3_custom',     label:'Custom size…',                        labelW:50,  labelH:25, cols:1, maxRows:9999, custom:true}
+    ]
+  },
+  honeywell:{
+    name:'Honeywell PC42d',
+    detail:'203 DPI · Max roll width: 108mm · Speed: 4 ips\nUsed in organised retail chains',
+    dpi:203, maxRollW:108, continuous:true,
+    rollConfigs:[
+      {id:'hw_38x25_1up',  label:'38 × 25 mm · 1-across (40mm roll)',  labelW:38,  labelH:25, cols:1, maxRows:9999},
+      {id:'hw_50x25_1up',  label:'50 × 25 mm · 1-across (56mm roll)',  labelW:50,  labelH:25, cols:1, maxRows:9999},
+      {id:'hw_50x25_2up',  label:'50 × 25 mm · 2-across (104mm roll)', labelW:50,  labelH:25, cols:2, maxRows:9999},
+      {id:'hw_100x50_1up', label:'100 × 50 mm · 1-across (104mm roll)',labelW:100, labelH:50, cols:1, maxRows:9999},
+      {id:'hw_custom',     label:'Custom size…',                        labelW:50,  labelH:25, cols:1, maxRows:9999, custom:true}
+    ]
+  },
+  brotherql:{
+    name:'Brother QL-800 / QL-820',
+    detail:'300 DPI · DK tape rolls · Max width: 62mm · Speed: 110 labels/min\nUses proprietary DK rolls — fixed widths: 29mm, 38mm, 54mm, 62mm',
+    dpi:300, maxRollW:62, continuous:true,
+    rollConfigs:[
+      {id:'bql_62x29_1up', label:'62 × 29 mm · 1-across (DK-11201)',   labelW:62,  labelH:29, cols:1, maxRows:9999},
+      {id:'bql_62x100_1up',label:'62 × 100 mm · 1-across (DK-11202)',  labelW:62,  labelH:100,cols:1, maxRows:9999},
+      {id:'bql_38x90_1up', label:'38 × 90 mm · 1-across (DK-11208)',   labelW:38,  labelH:90, cols:1, maxRows:9999},
+      {id:'bql_54x101_1up',label:'54 × 101 mm · 1-across (DK-11240)',  labelW:54,  labelH:101,cols:1, maxRows:9999},
+      {id:'bql_29x90_1up', label:'29 × 90 mm · 1-across (DK-11321)',   labelW:29,  labelH:90, cols:1, maxRows:9999},
+      {id:'bql_custom',    label:'Custom size (continuous tape)…',      labelW:62,  labelH:25, cols:1, maxRows:9999, custom:true}
+    ]
+  },
+  dymo:{
+    name:'DYMO LabelWriter 450 / 550',
+    detail:'600 DPI · Max width: 56mm · Speed: 51 labels/min\nUses DYMO-specific rolls — always 1-across. Good for small high-quality tags.',
+    dpi:600, maxRollW:56, continuous:true,
+    rollConfigs:[
+      {id:'dymo_25x54_1up', label:'25 × 54 mm · 1-across (11352)',     labelW:25,  labelH:54, cols:1, maxRows:9999},
+      {id:'dymo_36x89_1up', label:'36 × 89 mm · 1-across (99012)',     labelW:36,  labelH:89, cols:1, maxRows:9999},
+      {id:'dymo_28x89_1up', label:'28 × 89 mm · 1-across (99010)',     labelW:28,  labelH:89, cols:1, maxRows:9999},
+      {id:'dymo_54x101_1up',label:'54 × 101 mm · 1-across (99014)',    labelW:54,  labelH:101,cols:1, maxRows:9999},
+      {id:'dymo_custom',    label:'Custom size…',                       labelW:36,  labelH:89, cols:1, maxRows:9999, custom:true}
+    ]
+  },
+  generic:{
+    name:'Generic / Other',
+    detail:'Manual settings — enter your label size and column count directly.',
+    dpi:203, maxRollW:110, continuous:true,
+    rollConfigs:[
+      {id:'gen_50x25_1up',  label:'50 × 25 mm · 1-across',  labelW:50,  labelH:25, cols:1, maxRows:9999},
+      {id:'gen_38x25_1up',  label:'38 × 25 mm · 1-across',  labelW:38,  labelH:25, cols:1, maxRows:9999},
+      {id:'gen_custom',     label:'Custom size…',            labelW:50,  labelH:25, cols:1, maxRows:9999, custom:true}
+    ]
+  }
+};
+
+// Legacy size map kept for backward-compat with any saved designs
 var LABEL_SIZES={
   '50x25':{w:50,h:25,label:'50 × 25 mm'},
   '38x25':{w:38,h:25,label:'38 × 25 mm'},
@@ -2235,12 +2345,13 @@ function renderLabelDesigns(){
   }
   var html='<div class="design-grid">';
   labelDesigns.forEach(function(d,i){
-    var sz=LABEL_SIZES[d.size]||{label:d.size};
+    var printerName=(PRINTER_PROFILES[d.printerId]||{name:d.printerId||'Standard'}).name;
+    var sz=ldGetDesignSizeLabel(d);
     html+='<div class="design-card" onclick="openLabelDesignScreen('+i+')">';
     // mini visual preview on card
     html+='<div style="display:flex;justify-content:center;margin-bottom:8px;">'+buildLabelSVG(d,null,null,120,60)+'</div>';
     html+='<div class="design-card-name">'+esc(d.name)+'</div>';
-    html+='<div class="design-card-meta">'+esc(sz.label)+(d.cols>1||d.rows>1?' · '+d.cols+'×'+d.rows:'')+'</div>';
+    html+='<div class="design-card-meta">'+esc(sz)+(d.cols>1?' · '+d.cols+'-across':'')+'</div>';
     html+='<div class="design-card-acts">';
     html+='<button class="btn-sm" onclick="event.stopPropagation();dupLabelDesign('+i+')">Dup</button>';
     html+='<button class="btn-sm" style="color:var(--r);background:var(--rl);" onclick="event.stopPropagation();delLabelDesign('+i+')">Del</button>';
@@ -2267,7 +2378,15 @@ function renderLabelQueue(){
     html+='<button class="btn-ghost" style="color:var(--r);" onclick="labelQueue.splice('+i+',1);renderLabelQueue();">×</button></div>';
   });
   html+='</div>';
-  html+='<div class="card"><div class="fld"><label>Printer</label><select id="q-printer"><option>Default Printer</option><option>Label Printer 1 (Barcode)</option><option>Label Printer 2</option></select></div></div>';
+  html+='<div class="card"><div class="fld"><label>Printer</label><select id="q-printer">'
+    +'<option value="tsc203">TSC / Xprinter / TVS (203 DPI)</option>'
+    +'<option value="zebra203">Zebra ZD230 / ZD420 (203 DPI)</option>'
+    +'<option value="zebra300">Zebra ZD420 (300 DPI)</option>'
+    +'<option value="honeywell">Honeywell PC42d (203 DPI)</option>'
+    +'<option value="brotherql">Brother QL-800 / QL-820 (300 DPI)</option>'
+    +'<option value="dymo">DYMO LabelWriter 450 / 550</option>'
+    +'<option value="generic">Generic / Other</option>'
+    +'</select></div></div>';
   html+='<button class="btn-p" onclick="printAll()">🖨 Print All ('+totalPcs+' pcs)</button>';
   el.innerHTML=html;
 }
@@ -2280,15 +2399,15 @@ function openLabelDesignScreen(idx){
   var d=idx!==null?labelDesigns[idx]:null;
   document.getElementById('ldes-title').textContent=d?'Edit Design':'New Design';
   document.getElementById('ldes-name').value=d?d.name:'';
-  var sizeVal=d?d.size:'50x25';
-  document.getElementById('ldes-size').value=sizeVal;
-  document.getElementById('ldes-cols').value=d?d.cols||1:1;
-  document.getElementById('ldes-rows').value=d?d.rows||1:1;
-  document.getElementById('ldes-custom-size').style.display=sizeVal==='custom'?'block':'none';
-  if(sizeVal==='custom'&&d){
-    var parts=d.customW?[d.customW,d.customH]:[50,25];
-    document.getElementById('ldes-cw').value=parts[0];
-    document.getElementById('ldes-ch').value=parts[1];
+  // Set printer
+  var printerId=d&&d.printerId?d.printerId:'tsc203';
+  document.getElementById('ldes-printer').value=printerId;
+  ldPrinterChange(d);// populate roll configs
+  // If existing design, restore roll config selection
+  if(d&&d.rollCfgId){
+    var rc=document.getElementById('ldes-rollcfg');
+    if(rc)rc.value=d.rollCfgId;
+    ldRollCfgChange(d);
   }
   ['name','var','mrp','offer','sku','barcode','design'].forEach(function(f){
     var el=document.getElementById('ldes-f-'+f);
@@ -2297,39 +2416,142 @@ function openLabelDesignScreen(idx){
   ldPreview();
   pushScreen('s-label-design');
 }
+
+function ldPrinterChange(existingDesign){
+  var printerId=document.getElementById('ldes-printer').value;
+  var profile=PRINTER_PROFILES[printerId]||PRINTER_PROFILES.generic;
+  // Show printer info
+  var info=document.getElementById('ldes-printer-info');
+  if(info){info.style.display='block';info.textContent=profile.detail.replace(/\n/g,' · ');}
+  // Populate roll config dropdown
+  var rc=document.getElementById('ldes-rollcfg');
+  if(!rc) return;
+  rc.innerHTML='';
+  profile.rollConfigs.forEach(function(cfg){
+    var opt=document.createElement('option');
+    opt.value=cfg.id;
+    opt.textContent=cfg.label;
+    rc.appendChild(opt);
+  });
+  // Restore previous config if editing and printer matches
+  if(existingDesign&&existingDesign.rollCfgId&&existingDesign.printerId===printerId){
+    rc.value=existingDesign.rollCfgId;
+  }
+  ldRollCfgChange(existingDesign||null);
+}
+
+function ldRollCfgChange(existingDesign){
+  var printerId=document.getElementById('ldes-printer').value;
+  var profile=PRINTER_PROFILES[printerId]||PRINTER_PROFILES.generic;
+  var cfgId=document.getElementById('ldes-rollcfg').value;
+  var cfg=profile.rollConfigs.find(function(c){return c.id===cfgId;})||profile.rollConfigs[0];
+  var isCustom=!!(cfg&&cfg.custom);
+  var cs=document.getElementById('ldes-custom-size');
+  if(cs) cs.style.display=isCustom?'block':'none';
+  if(!isCustom&&cfg){
+    // Auto-set hidden cols/rows for non-custom configs
+    var colsEl=document.getElementById('ldes-cols');
+    var rowsEl=document.getElementById('ldes-rows');
+    if(colsEl) colsEl.value=cfg.cols;
+    if(rowsEl) rowsEl.value=1;// default 1 row for roll printing
+    var cwEl=document.getElementById('ldes-cw');
+    var chEl=document.getElementById('ldes-ch');
+    if(cwEl) cwEl.value=cfg.labelW;
+    if(chEl) chEl.value=cfg.labelH;
+  } else if(isCustom&&existingDesign&&existingDesign.rollCfgId===cfgId){
+    var colsEl=document.getElementById('ldes-cols');
+    var rowsEl=document.getElementById('ldes-rows');
+    if(colsEl) colsEl.value=existingDesign.cols||1;
+    if(rowsEl) rowsEl.value=existingDesign.rows||1;
+    var cwEl=document.getElementById('ldes-cw');
+    var chEl=document.getElementById('ldes-ch');
+    if(cwEl) cwEl.value=existingDesign.customW||50;
+    if(chEl) chEl.value=existingDesign.customH||25;
+  }
+  ldPreview();
+}
+
 function ldSizeChange(){
-  var v=document.getElementById('ldes-size').value;
-  document.getElementById('ldes-custom-size').style.display=v==='custom'?'block':'none';
   ldPreview();
 }
 function ldGetSize(){
-  var v=document.getElementById('ldes-size').value;
-  if(v==='custom'){return{w:parseInt(document.getElementById('ldes-cw').value)||50,h:parseInt(document.getElementById('ldes-ch').value)||25,label:'Custom'};}
-  return LABEL_SIZES[v]||LABEL_SIZES['50x25'];
+  var printerId=document.getElementById('ldes-printer').value;
+  var profile=PRINTER_PROFILES[printerId]||PRINTER_PROFILES.generic;
+  var cfgId=document.getElementById('ldes-rollcfg').value;
+  var cfg=profile.rollConfigs.find(function(c){return c.id===cfgId;})||profile.rollConfigs[0];
+  if(cfg&&!cfg.custom){return{w:cfg.labelW,h:cfg.labelH,label:cfg.labelW+'×'+cfg.labelH+' mm'};}
+  return{w:parseInt(document.getElementById('ldes-cw').value)||50,h:parseInt(document.getElementById('ldes-ch').value)||25,label:'Custom'};
+}
+function ldGetCols(){
+  var printerId=document.getElementById('ldes-printer').value;
+  var profile=PRINTER_PROFILES[printerId]||PRINTER_PROFILES.generic;
+  var cfgId=document.getElementById('ldes-rollcfg').value;
+  var cfg=profile.rollConfigs.find(function(c){return c.id===cfgId;})||profile.rollConfigs[0];
+  if(cfg&&!cfg.custom) return cfg.cols;
+  return Math.max(1,Math.min(6,parseInt(document.getElementById('ldes-cols').value)||1));
+}
+function ldGetRows(){
+  var printerId=document.getElementById('ldes-printer').value;
+  var profile=PRINTER_PROFILES[printerId]||PRINTER_PROFILES.generic;
+  var cfgId=document.getElementById('ldes-rollcfg').value;
+  var cfg=profile.rollConfigs.find(function(c){return c.id===cfgId;})||profile.rollConfigs[0];
+  if(cfg&&!cfg.custom) return Math.max(1,Math.min(10,parseInt(document.getElementById('ldes-rows').value)||1));
+  return Math.max(1,Math.min(20,parseInt(document.getElementById('ldes-rows').value)||1));
 }
 function ldGetFields(){
   var fields=[];
   ['name','var','mrp','offer','sku','barcode','design'].forEach(function(f){var el=document.getElementById('ldes-f-'+f);if(el&&el.checked)fields.push(f);});
   return fields;
 }
+// Returns a human-readable size label for a saved design object (works with both old and new format)
+function ldGetDesignSizeLabel(d){
+  if(!d) return '';
+  if(d.printerId&&d.rollCfgId){
+    var profile=PRINTER_PROFILES[d.printerId];
+    if(profile){
+      var cfg=profile.rollConfigs.find(function(c){return c.id===d.rollCfgId;});
+      if(cfg&&!cfg.custom) return cfg.labelW+'×'+cfg.labelH+' mm';
+      if(cfg&&cfg.custom) return (d.customW||50)+'×'+(d.customH||25)+' mm (custom)';
+    }
+  }
+  // Legacy fallback
+  var ls=LABEL_SIZES[d.size];
+  if(ls) return ls.label;
+  if(d.customW&&d.customH) return d.customW+'×'+d.customH+' mm';
+  return d.size||'';
+}
 function ldPreview(){
-  var cols=Math.max(1,Math.min(6,parseInt(document.getElementById('ldes-cols').value)||1));
-  var rows=Math.max(1,Math.min(10,parseInt(document.getElementById('ldes-rows').value)||1));
+  var cols=ldGetCols();
+  var rows=ldGetRows();
   var sz=ldGetSize();
   var fields=ldGetFields();
-  var d={name:document.getElementById('ldes-name').value||'Preview',size:document.getElementById('ldes-size').value,fields:fields,cols:cols,rows:rows,customW:sz.w,customH:sz.h};
+  var printerId=document.getElementById('ldes-printer')?document.getElementById('ldes-printer').value:'tsc203';
+  var rollCfgId=document.getElementById('ldes-rollcfg')?document.getElementById('ldes-rollcfg').value:'';
+  var d={name:document.getElementById('ldes-name').value||'Preview',
+    printerId:printerId,rollCfgId:rollCfgId,
+    size:rollCfgId,fields:fields,cols:cols,rows:rows,customW:sz.w,customH:sz.h};
   // Sample data for preview
   var sampleMat={name:'Cotton Kurta',designNo:'DES-001'};
   var sampleVar={name:'M · Blue',sku:'CK-M-BLU',mrp:1299,offer:999,barcode:'8901234567890'};
   var wrap=document.getElementById('ldes-preview-wrap');if(!wrap)return;
-  var info=document.getElementById('ldes-size-info');if(info)info.textContent=sz.label+' · '+cols+' col × '+rows+' row';
-  var html='';
+  var profile=PRINTER_PROFILES[printerId]||PRINTER_PROFILES.generic;
+  var cfgId=rollCfgId;
+  var cfg=profile.rollConfigs.find(function(c){return c.id===cfgId;})||profile.rollConfigs[0];
+  var cfgLabel=cfg?(cfg.labelW+'×'+cfg.labelH+' mm · '+cols+(cols===1?' col':' cols')):'';
+  var info=document.getElementById('ldes-size-info');
+  if(info)info.textContent=profile.name+' · '+cfgLabel+' · '+profile.dpi+' DPI';
+  var html='<div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;">';
   var pxW=Math.min(140,Math.round(sz.w*2.2));var pxH=Math.round(sz.h*2.2);
-  for(var r=0;r<rows;r++){
+  var previewRows=Math.min(rows,2);// show max 2 rows in preview
+  for(var r=0;r<previewRows;r++){
+    html+='<div style="display:flex;gap:4px;">';
     for(var c=0;c<cols;c++){
       html+=buildLabelSVG(d,sampleMat,sampleVar,pxW,pxH);
     }
+    html+='</div>';
   }
+  if(rows>2) html+='<div style="font-size:11px;color:var(--tx3);text-align:center;width:100%;margin-top:4px;">+'+(rows-2)+' more row'+(rows-2>1?'s':'')+' (not shown)</div>';
+  html+='</div>';
   wrap.innerHTML=html;
 }
 // ===== CODE-128 BARCODE RENDERER =====
@@ -2503,7 +2725,19 @@ function saveLabelDesignScreen(){
   var nm=document.getElementById('ldes-name').value.trim();
   if(!nm){showToast('Enter a design name','error');return;}
   var sz=ldGetSize();
-  var d={id:_ldesEditIdx!==null&&labelDesigns[_ldesEditIdx]?labelDesigns[_ldesEditIdx].id:uuid(),name:nm,size:document.getElementById('ldes-size').value,fields:ldGetFields(),cols:parseInt(document.getElementById('ldes-cols').value)||1,rows:parseInt(document.getElementById('ldes-rows').value)||1,customW:sz.w,customH:sz.h};
+  var printerId=document.getElementById('ldes-printer')?document.getElementById('ldes-printer').value:'tsc203';
+  var rollCfgId=document.getElementById('ldes-rollcfg')?document.getElementById('ldes-rollcfg').value:'';
+  var d={
+    id:_ldesEditIdx!==null&&labelDesigns[_ldesEditIdx]?labelDesigns[_ldesEditIdx].id:uuid(),
+    name:nm,
+    printerId:printerId,
+    rollCfgId:rollCfgId,
+    size:rollCfgId,// kept for backward compat
+    fields:ldGetFields(),
+    cols:ldGetCols(),
+    rows:ldGetRows(),
+    customW:sz.w,customH:sz.h
+  };
   if(_ldesEditIdx!==null)labelDesigns[_ldesEditIdx]=d;
   else labelDesigns.push(d);
   showToast('Design saved');goBack();
@@ -2522,11 +2756,11 @@ function renderGenerateTab(){
   else{
     html+='<div style="display:flex;flex-direction:column;gap:6px;">';
     labelDesigns.forEach(function(d){
-      var sz=LABEL_SIZES[d.size]||{label:d.size};
+      var szLabel=ldGetDesignSizeLabel(d);
       var sel=_glDesignId===d.id;
       html+='<label style="display:flex;align-items:center;gap:10px;padding:10px;border:1.5px solid '+(sel?'var(--p)':'var(--br)')+';border-radius:10px;cursor:pointer;background:'+(sel?'var(--pl)':'transparent')+';"><input type="radio" name="gl-design" value="'+d.id+'"'+(sel?' checked':'')+' onchange="glSelectDesign(\''+d.id+'\')">';
       html+=buildLabelSVG(d,null,null,56,28);
-      html+='<div><div class="fw-6 fs-13">'+esc(d.name)+'</div><div class="tx2 fs-12">'+esc(sz.label)+(d.cols>1||d.rows>1?' · '+d.cols+'×'+d.rows:'')+'</div></div></label>';
+      html+='<div><div class="fw-6 fs-13">'+esc(d.name)+'</div><div class="tx2 fs-12">'+esc(szLabel)+(d.cols>1?' · '+d.cols+'-across':'')+'</div></div></label>';
     });
     html+='</div>';
   }
@@ -2613,12 +2847,12 @@ function openAddLabel(matId,vi){
     } else {
       var dhtml='';
       labelDesigns.forEach(function(d,i){
-        var sz=LABEL_SIZES[d.size]||{label:d.size};
+        var szLbl=ldGetDesignSizeLabel(d);
         var sel=i===0;
         dhtml+='<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1.5px solid '+(sel?'var(--p)':'var(--br)')+';border-radius:10px;cursor:pointer;background:'+(sel?'var(--pl)':'transparent')+';">';
         dhtml+='<input type="radio" name="al-design" value="'+d.id+'"'+(sel?' checked':'')+' onchange="document.querySelectorAll(\'[name=al-design]\').forEach(function(r){r.closest(\'label\').style.borderColor=r.checked?\'var(--p)\':\' var(--br)\';r.closest(\'label\').style.background=r.checked?\'var(--pl)\':\' transparent\';});">';
         dhtml+=buildLabelSVG(d,m,v,56,28);
-        dhtml+='<div><div class="fw-6 fs-13">'+esc(d.name)+'</div><div class="tx2 fs-12">'+esc(sz.label)+'</div></div></label>';
+        dhtml+='<div><div class="fw-6 fs-13">'+esc(d.name)+'</div><div class="tx2 fs-12">'+esc(szLbl)+'</div></div></label>';
       });
       dl.innerHTML=dhtml;
     }
