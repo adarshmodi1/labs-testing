@@ -1743,7 +1743,7 @@ function buildVPricing(m,vi){
     '<div class="fld"><label>MRP</label><input type="number" id="vp-mrp" value="'+v.mrp+'" oninput="vCalcDisc()"></div>'+
     '<div class="fld"><label>Offer Price</label><input type="number" id="vp-offer" value="'+v.offer+'" oninput="vCalcDisc()"></div>'+
     '<div class="row-between mb-12"><span class="tx2 fs-13">Discount</span><span class="fw-6 fs-13" id="vp-disc">'+disc+'%</span></div>'+
-    '<div class="fld"><label>Cost</label><input type="number" id="vp-cost" value="'+v.cost+'" oninput="vCalcMargin()"></div>'+
+    '<div class="fld"><label>Vendor Cost</label><input type="number" id="vp-cost" value="'+v.cost+'" oninput="vCalcMargin()"></div>'+
     '<div class="row-between"><span class="tx2 fs-13">Margin</span><span class="fw-6 fs-13" id="vp-margin">'+margin+'%</span></div>'+
     '</div>'+
     '<div class="card">'+
@@ -2180,7 +2180,7 @@ function buildInfoHTML(m){
     '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">'+
     '<div class="fld"><label>MRP</label><input type="number" id="ci-mrp" value="'+p0.mrp+'" placeholder="0"></div>'+
     '<div class="fld"><label>Offer</label><input type="number" id="ci-offer" value="'+p0.offer+'" placeholder="0"></div>'+
-    '<div class="fld"><label>Cost</label><input type="number" id="ci-cost" value="'+p0.cost+'" placeholder="0"></div>'+
+    '<div class="fld"><label>Vendor Cost</label><input type="number" id="ci-cost" value="'+p0.cost+'" placeholder="0"></div>'+
     '</div></div>';
   // BOM (only for finished/production)
   var tp=(document.getElementById('ci-type')||{}).value||m.type;
@@ -2323,20 +2323,204 @@ function buildVariantsHTML(m){
   html+='</div>';
   return html;
 }
+// ---- Movement ledger state (per open material) ----
+var _mvPeriod='month'; // week|month|quarter|year|5y
+var _mvVariant='all';  // 'all' or variant index as string
+
 function buildMovementHTML(m){
+  // Gather all movements
   var all=[];
-  m.variants.forEach(function(v,vi){(v.movements||[]).forEach(function(mv){all.push(Object.assign({},mv,{variantName:v.name}));});});
-  all.sort(function(a,b){return b.date.localeCompare(a.date);});
-  var html='<div class="card"><div class="sect-hd"><h3>All Movements</h3><button class="btn-sm" onclick="openMoveSheet()">Record</button></div>';
-  if(!all.length)html+='<div class="tx3 text-center" style="padding:16px;">No movements recorded</div>';
-  all.forEach(function(mv){
-    var isIn=mv.type==='Stock in';
-    html+='<div class="mov-row"><div><div class="mov-type">'+esc(mv.variantName)+' · '+esc(mv.type)+'</div><div class="mov-meta">'+esc(mv.date)+(mv.ref?' · '+esc(mv.ref):'')+'</div></div>';
-    html+='<span class="mov-qty '+(isIn?'in':'out')+'">'+(isIn?'+':'')+mv.qty+'</span></div>';
+  m.variants.forEach(function(v,vi){
+    (v.movements||[]).forEach(function(mv){
+      all.push(Object.assign({},mv,{variantName:v.name,variantIdx:vi,unit:m.unit}));
+    });
+  });
+  all.sort(function(a,b){return a.date.localeCompare(b.date);});
+
+  // Period filter
+  var now=new Date();
+  var cutoff=new Date(now);
+  if(_mvPeriod==='week') cutoff.setDate(now.getDate()-7);
+  else if(_mvPeriod==='month') cutoff.setMonth(now.getMonth()-1);
+  else if(_mvPeriod==='quarter') cutoff.setMonth(now.getMonth()-3);
+  else if(_mvPeriod==='year') cutoff.setFullYear(now.getFullYear()-1);
+  else cutoff.setFullYear(now.getFullYear()-5);
+  var cutStr=cutoff.toISOString().slice(0,10);
+
+  // Variant filter
+  var filtered=all.filter(function(mv){
+    if(_mvVariant!=='all'&&mv.variantIdx!==parseInt(_mvVariant))return false;
+    return true;
+  });
+  var inPeriod=filtered.filter(function(mv){return mv.date>=cutStr;});
+
+  // Stats
+  var totalIn=0,totalOut=0;
+  inPeriod.forEach(function(mv){
+    var isIn=mv.type==='Stock in'||mv.type==='Stock In';
+    if(isIn)totalIn+=mv.qty;else totalOut+=mv.qty;
+  });
+  var stockHand=totalIn-totalOut;
+  var unitsSold=inPeriod.filter(function(mv){return /sold|sale|dispatch/i.test(mv.type+' '+(mv.subtype||''));}).reduce(function(s,mv){return s+mv.qty;},0);
+
+  // Compute closing balances for table (running from oldest)
+  var running=0;
+  var withBalance=[];
+  filtered.forEach(function(mv){
+    var isIn=mv.type==='Stock in'||mv.type==='Stock In';
+    if(isIn)running+=mv.qty;else running-=mv.qty;
+    withBalance.push(Object.assign({},mv,{closing:running}));
+  });
+  // Reverse for display (newest first)
+  var displayed=withBalance.slice().reverse();
+  // Filter to period for display
+  var displayedInPeriod=displayed.filter(function(mv){return mv.date>=cutStr;});
+
+  // Build chart data — group by period bucket
+  var chartData=mvChartBuckets(inPeriod,_mvPeriod);
+
+  var html='';
+
+  // --- Stat tiles ---
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 16px 0;">';
+  html+=mvStatTile('Materials Received',totalIn,m.unit,'var(--p)');
+  html+=mvStatTile('Materials Sent',totalOut,m.unit,'var(--b)');
+  html+=mvStatTile('Stock in Hand',Math.max(0,stockHand),m.unit,'var(--g)');
+  html+=mvStatTile('Units Sold',unitsSold,m.unit,'var(--a)');
+  html+='</div>';
+
+  // --- Period selector + variant filter ---
+  html+='<div style="padding:12px 16px 0;display:flex;flex-direction:column;gap:8px;">';
+  // Period chips
+  html+='<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;">';
+  ['week','month','quarter','year','5y'].forEach(function(p){
+    var lbl={week:'Week',month:'Month',quarter:'Quarter',year:'Year','5y':'5 Years'}[p];
+    html+='<button onclick="setMvPeriod(\''+p+'\')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1.5px solid '+(p===_mvPeriod?'var(--p)':'var(--br)')+';background:'+(p===_mvPeriod?'var(--p)':'transparent')+';color:'+(p===_mvPeriod?'#fff':'var(--tx2)')+';font-size:13px;font-weight:600;cursor:pointer;">'+lbl+'</button>';
   });
   html+='</div>';
+  // Variant chips
+  if(m.variants.length>1){
+    html+='<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;">';
+    html+='<button onclick="setMvVariant(\'all\')" style="flex-shrink:0;padding:5px 12px;border-radius:16px;border:1.5px solid '+(_mvVariant==='all'?'var(--p)':'var(--br)')+';background:'+(_mvVariant==='all'?'var(--pl)':'transparent')+';color:'+(_mvVariant==='all'?'var(--p)':'var(--tx2)')+';font-size:12px;cursor:pointer;">All variants</button>';
+    m.variants.forEach(function(v,i){
+      var sel=_mvVariant===String(i);
+      html+='<button onclick="setMvVariant(\''+i+'\')" style="flex-shrink:0;padding:5px 12px;border-radius:16px;border:1.5px solid '+(sel?'var(--p)':'var(--br)')+';background:'+(sel?'var(--pl)':'transparent')+';color:'+(sel?'var(--p)':'var(--tx2)')+';font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:'+v.color+';flex-shrink:0;"></span>'+esc(v.name)+'</button>';
+    });
+    html+='</div>';
+  }
+  html+='</div>';
+
+  // --- Bar chart ---
+  html+='<div style="padding:12px 16px 0;">';
+  html+=mvBarChart(chartData,m.unit);
+  html+='</div>';
+
+  // --- Ledger table ---
+  html+='<div style="margin:12px 16px 0;background:var(--sf);border-radius:14px;border:1px solid var(--br);overflow:hidden;">';
+  html+='<div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--br);">';
+  html+='<span style="font-weight:700;font-size:14px;">Movement Ledger</span>';
+  html+='<button class="btn-sm" onclick="openMoveSheet()">+ Record</button>';
+  html+='</div>';
+  if(!displayedInPeriod.length){
+    html+='<div class="tx3 text-center fs-13" style="padding:24px;">No movements in this period</div>';
+  } else {
+    // Table header
+    html+='<div style="display:grid;grid-template-columns:72px 1fr 90px 44px 60px 70px 80px;gap:0;padding:8px 12px;background:var(--sf2);border-bottom:1px solid var(--br);">';
+    ['Date','Ref / Type','Variant','Mov','Qty','Value','Closing'].forEach(function(h){
+      html+='<span style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;">'+h+'</span>';
+    });
+    html+='</div>';
+    // Rows
+    displayedInPeriod.forEach(function(mv){
+      var isIn=mv.type==='Stock in'||mv.type==='Stock In';
+      var d=mv.date.replace(/-/g,'/').replace(/^(\d{4})\/(\d{2})\/(\d{2})$/,'$3/$2/$1'); // DD/MM/YYYY
+      var val=mv.qty*(mv.rate||0);
+      var valStr=val>0?'₹'+val.toLocaleString('en-IN'):'—';
+      var iconBg=isIn?'#1D9E75':'#E24B4A';
+      var icon=isIn
+        ?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 12 12 4 4 12"/><line x1="12" y1="4" x2="12" y2="20"/></svg>'
+        :'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="4 12 12 20 20 12"/><line x1="12" y1="20" x2="12" y2="4"/></svg>';
+      html+='<div style="display:grid;grid-template-columns:72px 1fr 90px 44px 60px 70px 80px;gap:0;padding:9px 12px;border-bottom:1px solid var(--br);align-items:center;">';
+      html+='<span style="font-size:12px;color:var(--tx2);">'+d+'</span>';
+      html+='<div><div style="font-size:13px;font-weight:600;">'+esc(mv.type)+(mv.subtype?' · '+esc(mv.subtype):'')+'</div>'+(mv.ref?'<div style="font-size:11px;color:var(--tx3);">#'+esc(mv.ref)+'</div>':'')+'</div>';
+      html+='<span style="font-size:12px;color:var(--tx2);">'+esc(mv.variantName)+'</span>';
+      html+='<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:'+iconBg+';">'+icon+'</span>';
+      html+='<span style="font-size:13px;font-weight:600;color:'+(isIn?'var(--g)':'var(--r)')+';">'+(isIn?'+':'-')+mv.qty+' <span style="font-size:11px;font-weight:400;color:var(--tx3);">'+esc(mv.unit||'')+'</span></span>';
+      html+='<span style="font-size:12px;">'+valStr+'</span>';
+      html+='<span style="font-size:12px;font-weight:600;">'+Math.max(0,mv.closing)+' <span style="font-size:10px;font-weight:400;color:var(--tx3);">'+esc(mv.unit||'')+'</span></span>';
+      html+='</div>';
+    });
+  }
+  html+='</div>';
+  html+='<div style="height:24px;"></div>';
   return html;
 }
+
+function mvStatTile(label,val,unit,color){
+  return '<div style="background:'+color+';border-radius:14px;padding:14px;color:#fff;">'+
+    '<div style="font-size:12px;font-weight:600;opacity:.85;margin-bottom:6px;">'+label+'</div>'+
+    '<div style="font-size:26px;font-weight:800;line-height:1;">'+val+'</div>'+
+    '<div style="font-size:11px;opacity:.75;margin-top:4px;">'+unit+'</div>'+
+    '</div>';
+}
+
+function mvChartBuckets(movements,period){
+  if(!movements.length)return [];
+  var fmt;
+  if(period==='week')fmt=function(d){return d.slice(5).replace('-','/');};// MM/DD
+  else if(period==='month')fmt=function(d){return d.slice(5).replace('-','/');};
+  else if(period==='quarter')fmt=function(d){var p=d.split('-');return 'W'+getWeekNum(p[0],p[1],p[2]);};
+  else if(period==='year')fmt=function(d){var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return months[parseInt(d.slice(5,7))-1];};
+  else fmt=function(d){return d.slice(0,4);};
+  var buckets={};
+  movements.forEach(function(mv){
+    var k=fmt(mv.date);
+    if(!buckets[k])buckets[k]={in:0,out:0,label:k};
+    var isIn=mv.type==='Stock in'||mv.type==='Stock In';
+    if(isIn)buckets[k].in+=mv.qty;else buckets[k].out+=mv.qty;
+  });
+  return Object.values(buckets).slice(-12);
+}
+function getWeekNum(y,m,d){var date=new Date(y,parseInt(m)-1,parseInt(d));var start=new Date(date.getFullYear(),0,1);return Math.ceil(((date-start)/86400000+start.getDay()+1)/7);}
+
+function mvBarChart(buckets,unit){
+  if(!buckets.length){
+    return '<div style="background:var(--sf);border-radius:14px;border:1px solid var(--br);padding:32px;text-align:center;color:var(--tx3);font-size:13px;">No data to chart in this period</div>';
+  }
+  var W=360,H=120,barW=Math.max(8,Math.min(28,Math.floor((W-32)/buckets.length)-4)),padL=28,padB=22,padT=10;
+  var maxVal=Math.max.apply(null,buckets.map(function(b){return Math.max(b.in,b.out);}));
+  if(!maxVal)maxVal=1;
+  var chartH=H-padB-padT;
+  var step=Math.floor((W-padL-8)/buckets.length);
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:'+(H+10)+'px;display:block;" xmlns="http://www.w3.org/2000/svg">';
+  // Y gridlines
+  for(var g=0;g<=4;g++){
+    var yg=padT+chartH*(1-g/4);
+    svg+='<line x1="'+padL+'" y1="'+yg+'" x2="'+(W-4)+'" y2="'+yg+'" stroke="var(--br)" stroke-width="0.5"/>';
+    svg+='<text x="'+(padL-4)+'" y="'+(yg+4)+'" text-anchor="end" font-size="9" fill="var(--tx3)">'+Math.round(maxVal*g/4)+'</text>';
+  }
+  buckets.forEach(function(b,i){
+    var x=padL+i*step;
+    var hIn=Math.round((b.in/maxVal)*chartH);
+    var hOut=Math.round((b.out/maxVal)*chartH);
+    var half=Math.floor(barW/2)-1;
+    // IN bar (green)
+    svg+='<rect x="'+(x)+'" y="'+(padT+chartH-hIn)+'" width="'+half+'" height="'+hIn+'" rx="3" fill="#1D9E75" opacity=".85"/>';
+    // OUT bar (red)
+    svg+='<rect x="'+(x+half+2)+'" y="'+(padT+chartH-hOut)+'" width="'+half+'" height="'+hOut+'" rx="3" fill="#E24B4A" opacity=".85"/>';
+    // X label
+    svg+='<text x="'+(x+half)+'" y="'+(H-4)+'" text-anchor="middle" font-size="9" fill="var(--tx2)">'+b.label+'</text>';
+  });
+  svg+='</svg>';
+  var legend='<div style="display:flex;gap:12px;justify-content:flex-end;margin-bottom:4px;">'+
+    '<span style="font-size:11px;color:var(--tx2);display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#1D9E75;display:inline-block;"></span>In</span>'+
+    '<span style="font-size:11px;color:var(--tx2);display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#E24B4A;display:inline-block;"></span>Out</span>'+
+    '</div>';
+  return '<div style="background:var(--sf);border-radius:14px;border:1px solid var(--br);padding:12px 14px;">'+legend+svg+'</div>';
+}
+
+function setMvPeriod(p){_mvPeriod=p;var m=getMat(_editMatId);if(m)document.getElementById('ct-2').innerHTML=buildMovementHTML(m);}
+function setMvVariant(v){_mvVariant=v;var m=getMat(_editMatId);if(m)document.getElementById('ct-2').innerHTML=buildMovementHTML(m);}
 function saveCreate(){
   var name=(document.getElementById('ci-name')||{}).value||'';
   if(!name.trim()){showToast('Enter material name','error');return;}
