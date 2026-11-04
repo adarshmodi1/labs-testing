@@ -1235,6 +1235,23 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
   </div>
 </div>
 
+<!-- sh-bulk: Apply to all variants -->
+<div id="sh-bulk" class="sh-ov" onclick="if(event.target===this)closeSheet('sh-bulk')">
+  <div class="sh">
+    <div class="sh-handle"></div>
+    <div class="sh-hd"><h3>Apply to All Variants</h3><button class="btn-ghost" onclick="closeSheet('sh-bulk')">Done</button></div>
+    <div class="sh-body">
+      <p class="tx2 fs-13" style="margin-bottom:16px;">Set a value and tap Apply — all variants will be updated.</p>
+      <div class="fld"><label>MRP (₹)</label><input type="number" id="bulk-mrp" placeholder="Leave blank to skip"></div>
+      <div class="fld"><label>Offer Price (₹)</label><input type="number" id="bulk-offer" placeholder="Leave blank to skip"></div>
+      <div class="fld"><label>Vendor Cost (₹)</label><input type="number" id="bulk-cost" placeholder="Leave blank to skip"></div>
+      <div class="fld"><label>Min Quantity</label><input type="number" id="bulk-minqty" placeholder="Leave blank to skip"></div>
+      <div class="fld"><label>Stock Quantity</label><input type="number" id="bulk-qty" placeholder="Leave blank to skip"></div>
+      <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="applyBulkToAll()">Apply to All Variants</button>
+    </div>
+  </div>
+</div>
+
 <!-- s-request-detail: Order Request Detail (full screen) -->
 <div id="s-request-detail" class="screen">
   <div class="tb">
@@ -2483,17 +2500,53 @@ function generateVariants(){
 }
 function buildVariantsHTML(m){
   if(!m.variants||!m.variants.length)return '<div class="empty"><div class="empty-icon">📦</div><div class="empty-msg">No variants yet. Add categories in Info tab and generate.</div></div>';
-  var html='<div class="card"><div class="sect-hd"><h3>'+m.variants.length+' Variants</h3></div>';
+  // Apply-to-all banner
+  var html='<div style="background:var(--pl);border:1.5px solid var(--pb);border-radius:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
+  html+='<span style="font-size:12px;color:var(--pt);font-weight:500;">Bulk-edit pricing, stock or barcodes across all variants</span>';
+  html+='<button class="btn-sm" onclick="openSheet(\'sh-bulk\')">Apply to all</button>';
+  html+='</div>';
+  html+='<div class="card"><div class="sect-hd"><h3>'+m.variants.length+' Variants</h3></div>';
   m.variants.forEach(function(v,i){
     var st=stockStatus(v);
-    html+='<div class="var-row"><div class="var-swatch" style="background:'+v.color+'"></div>';
-    html+='<div class="var-info"><div class="var-name">'+esc(v.name)+'</div><div class="var-sku">'+esc(v.sku)+'</div></div>';
-    html+='<span class="fw-6 fs-13">'+v.qty+'</span><span class="dot dot-'+st+'"></span>';
+    html+='<div class="var-row" style="flex-wrap:wrap;gap:6px;padding:10px 0;">';
+    html+='<div class="var-swatch" style="background:'+v.color+'"></div>';
+    html+='<div class="var-info" style="flex:1;min-width:0;"><div class="var-name">'+esc(v.name)+'</div><div class="var-sku">'+esc(v.sku)+' · ₹'+v.mrp+'</div></div>';
+    // ± stock stepper
+    html+='<div style="display:flex;align-items:center;gap:0;border:1.5px solid var(--br);border-radius:8px;overflow:hidden;">';
+    html+='<button onclick="stepVarQty('+i+',-1)" style="width:30px;height:30px;border:none;background:var(--sf2);color:var(--tx);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>';
+    html+='<span id="vq-'+i+'" style="min-width:32px;text-align:center;font-size:13px;font-weight:600;padding:0 4px;">'+v.qty+'</span>';
+    html+='<button onclick="stepVarQty('+i+',1)" style="width:30px;height:30px;border:none;background:var(--sf2);color:var(--tx);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>';
+    html+='</div>';
+    html+='<span class="dot dot-'+st+'"></span>';
     html+='<button class="btn-sm" onclick="openVDetail('+m.id+','+i+')">Edit →</button>';
     html+='</div>';
   });
   html+='</div>';
   return html;
+}
+function stepVarQty(vi,d){
+  var m=_editMatId?getMat(_editMatId):null;if(!m||!m.variants[vi])return;
+  m.variants[vi].qty=Math.max(0,m.variants[vi].qty+d);
+  var el=document.getElementById('vq-'+vi);if(el)el.textContent=m.variants[vi].qty;
+}
+function applyBulkToAll(){
+  var m=_editMatId?getMat(_editMatId):null;if(!m||!m.variants.length)return;
+  var mrp=document.getElementById('bulk-mrp').value;
+  var offer=document.getElementById('bulk-offer').value;
+  var cost=document.getElementById('bulk-cost').value;
+  var minqty=document.getElementById('bulk-minqty').value;
+  var qty=document.getElementById('bulk-qty').value;
+  var count=0;
+  m.variants.forEach(function(v){
+    if(mrp!==''){v.mrp=parseFloat(mrp)||0;count++;}
+    if(offer!==''){v.offer=parseFloat(offer)||0;}
+    if(cost!==''){v.cost=parseFloat(cost)||0;}
+    if(minqty!==''){v.minqty=parseInt(minqty)||0;}
+    if(qty!==''){v.qty=Math.max(0,parseInt(qty)||0);}
+  });
+  closeSheet('sh-bulk');
+  setCTab(1);// refresh variants tab
+  showToast('Applied to all '+m.variants.length+' variants');
 }
 // ---- Movement ledger state (per open material) ----
 var _mvPeriod='month'; // week|month|quarter|year|5y
