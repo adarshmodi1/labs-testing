@@ -236,6 +236,28 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
 /* Costing */
 .cost-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--br);}
 .cost-row:last-child{border-bottom:none;}
+/* Catalog Generator */
+.cat-profile-card{background:var(--sf);border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer;border:1.5px solid var(--br);}
+.cat-profile-card:active{background:var(--sf2);}
+.cat-profile-hd{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.cat-platform-badge{padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;background:var(--pl);color:var(--p);}
+.cat-run-row{background:var(--sf);border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1.5px solid var(--br);}
+.cat-run-status{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;}
+.cat-run-status.pending{background:var(--al);color:var(--a);}
+.cat-run-status.running{background:var(--bl);color:var(--b);}
+.cat-run-status.done{background:var(--gl);color:var(--g);}
+.cat-run-status.error{background:var(--rl);color:var(--r);}
+.cat-progress{height:6px;border-radius:3px;background:var(--br2);margin:8px 0;overflow:hidden;}
+.cat-progress-bar{height:100%;background:var(--p);border-radius:3px;transition:width .4s;}
+.cat-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin-top:8px;}
+.cat-field-check{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;}
+.cat-output-img{width:56px;height:56px;border-radius:8px;object-fit:cover;background:var(--sf2);border:1.5px solid var(--br);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.cat-prod-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--br);}
+.cat-prod-row:last-child{border-bottom:none;}
+.cat-prod-check{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--br2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+.cat-prod-check.on{background:var(--p);border-color:var(--p);}
+.cat-style-opt{flex:1;padding:10px 8px;border-radius:10px;border:1.5px solid var(--br);cursor:pointer;text-align:center;font-size:12px;transition:all .15s;}
+.cat-style-opt.on{border-color:var(--p);background:var(--pl);color:var(--p);font-weight:600;}
 </style>
 </head>
 <body>
@@ -609,6 +631,151 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
   </div>
 </div>
 
+<!-- s-catalog: Catalog Generator Home -->
+<div id="s-catalog" class="screen">
+  <div class="tb">
+    <button class="tb-bk" onclick="openSheet('sh-nav')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <h1>Catalog Generator</h1>
+    <button class="tb-add" onclick="openCatalogProfile(null)">+ Profile</button>
+  </div>
+  <div class="tab-strip"><div class="tab-inner">
+    <button class="tab on" onclick="setCatTab(0)">Profiles</button>
+    <button class="tab" onclick="setCatTab(1)">Run History</button>
+  </div></div>
+  <div id="cat-t0" class="body"></div>
+  <div id="cat-t1" class="body" style="display:none;"></div>
+</div>
+
+<!-- s-catalog-profile: Create/Edit Catalog Profile -->
+<div id="s-catalog-profile" class="screen">
+  <div class="tb">
+    <button class="tb-bk" onclick="goBack()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <h1 id="cprof-title">New Profile</h1>
+    <button class="tb-act" onclick="saveCatalogProfile()">Save</button>
+  </div>
+  <div class="body">
+    <div class="card">
+      <div class="fld"><label>Profile Name</label><input type="text" id="cprof-name" placeholder="e.g. Myntra Spring 2027"></div>
+      <div class="fld">
+        <label>Target Platform</label>
+        <select id="cprof-platform" onchange="cprofPlatformChange()">
+          <option value="shopify">Shopify</option>
+          <option value="myntra">Myntra</option>
+          <option value="nykaa">Nykaa Fashion</option>
+          <option value="ajio">Ajio</option>
+          <option value="amazon">Amazon Fashion</option>
+          <option value="whatsapp">WhatsApp Catalog</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sect-hd"><h3>Image Settings</h3></div>
+      <div class="fld">
+        <label>Image Style</label>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <div class="cat-style-opt on" id="cprof-style-product" onclick="setCprofStyle('product')">📦<br>Product only</div>
+          <div class="cat-style-opt" id="cprof-style-lifestyle" onclick="setCprofStyle('lifestyle')">🧍<br>Lifestyle</div>
+          <div class="cat-style-opt" id="cprof-style-stylized" onclick="setCprofStyle('stylized')">✨<br>Stylized</div>
+        </div>
+        <input type="hidden" id="cprof-style" value="product">
+      </div>
+      <div class="fld"><label>Backdrop / Background</label><input type="text" id="cprof-backdrop" placeholder="e.g. white studio, marble, outdoor green"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="fld">
+          <label>Aspect Ratio</label>
+          <select id="cprof-ratio">
+            <option value="1:1">1:1 (Square)</option>
+            <option value="4:5">4:5 (Portrait)</option>
+            <option value="2:3">2:3 (Tall)</option>
+            <option value="16:9">16:9 (Wide)</option>
+            <option value="3:4">3:4</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label>Resolution</label>
+          <select id="cprof-res">
+            <option value="1000x1000">1000 × 1000</option>
+            <option value="1500x1500">1500 × 1500</option>
+            <option value="2000x2000">2000 × 2000</option>
+            <option value="800x1000">800 × 1000</option>
+            <option value="1200x1500">1200 × 1500</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sect-hd"><h3>Content Fields</h3></div>
+      <p class="tx2 fs-13" style="margin-bottom:10px;">AI will generate these fields for each product.</p>
+      <div class="cat-field-grid" id="cprof-fields">
+        <label class="cat-field-check"><input type="checkbox" value="title" checked> Title</label>
+        <label class="cat-field-check"><input type="checkbox" value="desc" checked> Description</label>
+        <label class="cat-field-check"><input type="checkbox" value="bullets" checked> Bullet points</label>
+        <label class="cat-field-check"><input type="checkbox" value="hsn"> HSN Code</label>
+        <label class="cat-field-check"><input type="checkbox" value="fabric"> Fabric composition</label>
+        <label class="cat-field-check"><input type="checkbox" value="care"> Care instructions</label>
+        <label class="cat-field-check"><input type="checkbox" value="sizeChart"> Size chart</label>
+        <label class="cat-field-check"><input type="checkbox" value="origin"> Country of origin</label>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sect-hd"><h3>Output Settings</h3></div>
+      <div class="fld"><label>Image naming pattern</label><input type="text" id="cprof-naming" value="{sku}_{index}" placeholder="{sku}_{index}"><div class="tx3 fs-12" style="margin-top:4px;">Variables: {sku} {name} {index}</div></div>
+      <div class="fld"><label>Excel template</label>
+        <select id="cprof-excel">
+          <option value="shopify">Shopify product CSV</option>
+          <option value="myntra">Myntra bulk upload sheet</option>
+          <option value="nykaa">Nykaa listing template</option>
+          <option value="ajio">Ajio catalog sheet</option>
+          <option value="amazon">Amazon flat-file template</option>
+          <option value="generic">Generic / Custom</option>
+        </select>
+      </div>
+      <label class="row-between" style="cursor:pointer;padding:6px 0;">
+        <div><div class="fs-14 fw-6">Host images on CDN</div><div class="tx3 fs-12">Images get a shareable URL for direct platform upload</div></div>
+        <label class="sw"><input type="checkbox" id="cprof-cdn" checked><span class="sw-sl"></span></label>
+      </label>
+    </div>
+    <div class="card">
+      <div class="fld"><label>AI prompt override <span class="tx3">(optional)</span></label><textarea id="cprof-ai-prompt" placeholder="Extra context for AI — brand tone, specific style guidelines, etc." style="height:72px;resize:none;"></textarea></div>
+    </div>
+  </div>
+</div>
+
+<!-- s-catalog-run: Start a Catalog Run -->
+<div id="s-catalog-run" class="screen">
+  <div class="tb">
+    <button class="tb-bk" onclick="goBack()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <h1 id="crun-title">New Catalog Run</h1>
+  </div>
+  <div class="tab-strip"><div class="tab-inner">
+    <button class="tab on" onclick="setCrunTab(0)">1 · Profile</button>
+    <button class="tab" id="crun-tab-1" onclick="setCrunTab(1)">2 · Products</button>
+    <button class="tab" id="crun-tab-2" onclick="setCrunTab(2)">3 · Review</button>
+  </div></div>
+  <div id="crun-t0" class="body"></div>
+  <div id="crun-t1" class="body" style="display:none;"></div>
+  <div id="crun-t2" class="body" style="display:none;"></div>
+</div>
+
+<!-- s-catalog-output: Catalog Run Output -->
+<div id="s-catalog-output" class="screen">
+  <div class="tb">
+    <button class="tb-bk" onclick="goBack()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <h1>Catalog Output</h1>
+    <button class="tb-act" id="cout-push-btn" onclick="catPushToShopify()" style="display:none;">Push to Shopify</button>
+  </div>
+  <div class="body" id="cout-body"></div>
+</div>
+
 <!-- s-settings: Settings -->
 <div id="s-settings" class="screen">
   <div class="tb">
@@ -663,6 +830,10 @@ label{font-size:12px;color:var(--tx2);font-weight:500;display:block;margin-botto
       <div class="nav-item" onclick="navTo('s-labels')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         <span class="nav-item-label">Print Labels</span>
+      </div>
+      <div class="nav-item" onclick="navTo('s-catalog')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span class="nav-item-label">Catalog Generator</span>
       </div>
       <div class="nav-item" onclick="navTo('s-sync')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
@@ -1035,6 +1206,8 @@ var channels=[
   {id:'whatsapp',name:'WhatsApp Catalog',icon:'💬',color:'#25D366'}
 ];
 var channelListings=[];
+var catalogProfiles=[];
+var catalogRuns=[];
 // runtime state
 var _screenStack=[];
 var _editMatId=null;
@@ -1046,6 +1219,11 @@ var _miItemTarget=null; // 'in' or 'out'
 var _miItemIdx=null;
 var _blTarget=null; // {matId, vi, isProductLevel}
 var _alMatId=null,_alVi=null,_alQty=1;
+var _editCprofId=null;
+var _crunProfileId=null;
+var _crunSelectedIds=[];
+var _crunTab=0;
+var _coutRunId=null;
 var _lpMatId=null,_lpVi=null,_lpDesignId=null,_lpQty=1;
 var _chFilter='';
 
@@ -1093,6 +1271,7 @@ function navTo(id){
   else if(id==='s-collections')renderCollections();
   else if(id==='s-order-requests')renderOrderRequests('');
   else if(id==='s-labels')renderLabels();
+  else if(id==='s-catalog')renderCatalog();
   else if(id==='s-settings')renderOptionSets();
   showScreen(id);
 }
@@ -2753,6 +2932,375 @@ function saveOptionSet(){
 }
 function deleteOptionSet(id){if(!confirm('Delete this option set?'))return;optionSets=optionSets.filter(function(o){return o.id!==id;});renderOptionSets();}
 
+
+// ===== CATALOG GENERATOR =====
+var CAT_PLATFORMS={
+  shopify:{name:'Shopify',icon:'🛒',color:'#96BF48'},
+  myntra:{name:'Myntra',icon:'🔵',color:'#FF3E6C'},
+  nykaa:{name:'Nykaa Fashion',icon:'🌸',color:'#FC2779'},
+  ajio:{name:'Ajio',icon:'⚡',color:'#1D1D1B'},
+  amazon:{name:'Amazon Fashion',icon:'📦',color:'#FF9900'},
+  whatsapp:{name:'WhatsApp Catalog',icon:'💬',color:'#25D366'},
+  custom:{name:'Custom',icon:'📋',color:'#4A3BB5'}
+};
+var CAT_FIELD_LABELS={title:'Title',desc:'Description',bullets:'Bullet points',hsn:'HSN Code',fabric:'Fabric composition',care:'Care instructions',sizeChart:'Size chart',origin:'Country of origin'};
+
+// ---- Catalog Home ----
+function renderCatalog(){setCatTab(0);}
+function setCatTab(n){
+  document.querySelectorAll('#s-catalog .tab').forEach(function(t,i){t.classList.toggle('on',i===n);});
+  document.getElementById('cat-t0').style.display=n===0?'flex':'none';
+  document.getElementById('cat-t1').style.display=n===1?'flex':'none';
+  if(n===0)renderCatalogProfiles();
+  else renderCatalogRunHistory();
+}
+function renderCatalogProfiles(){
+  var el=document.getElementById('cat-t0');if(!el)return;
+  if(!catalogProfiles.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">🗂</div><div class="empty-msg">No profiles yet. A profile defines the platform, image style, and fields for a catalog run.</div><button class="btn-p" style="width:auto;padding:10px 24px;margin-top:16px;" onclick="openCatalogProfile(null)">+ New Profile</button></div>';
+    return;
+  }
+  var html='';
+  catalogProfiles.forEach(function(p){
+    var pl=CAT_PLATFORMS[p.platform]||CAT_PLATFORMS.custom;
+    html+='<div class="cat-profile-card" onclick="openCatalogProfile(\''+p.id+'\')">';
+    html+='<div class="cat-profile-hd"><span style="font-size:22px;">'+pl.icon+'</span><div class="flex-1"><div class="fw-6 fs-14">'+esc(p.name)+'</div><div class="tx2 fs-12">'+pl.name+' · '+(p.imageStyle||'product')+' images</div></div>';
+    html+='<button class="btn-sm btn-p-sm" onclick="event.stopPropagation();startCatalogRun(\''+p.id+'\')">▶ Run</button></div>';
+    var fields=p.requiredFields||[];
+    if(fields.length)html+='<div class="tx2 fs-12">Fields: '+fields.map(function(f){return CAT_FIELD_LABELS[f]||f;}).join(', ')+'</div>';
+    html+='</div>';
+  });
+  html+='<button class="btn-s" style="width:100%;margin-top:4px;" onclick="openCatalogProfile(null)">+ New Profile</button>';
+  el.innerHTML=html;
+}
+function renderCatalogRunHistory(){
+  var el=document.getElementById('cat-t1');if(!el)return;
+  if(!catalogRuns.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">📋</div><div class="empty-msg">No runs yet. Start a run from a profile.</div></div>';
+    return;
+  }
+  var html='';
+  catalogRuns.slice().reverse().forEach(function(r){
+    var p=catalogProfiles.find(function(x){return x.id===r.profileId;})||{name:'Unknown',platform:'custom'};
+    var pl=CAT_PLATFORMS[p.platform]||CAT_PLATFORMS.custom;
+    html+='<div class="cat-run-row" onclick="openCatalogOutput(\''+r.id+'\')">'+
+      '<div class="row-between mb-8">'+
+      '<div class="fw-6 fs-14">'+pl.icon+' '+esc(p.name)+'</div>'+
+      '<span class="cat-run-status '+r.status+'">'+(r.status==='done'?'✓ Done':r.status==='running'?'⏳ Running':r.status==='error'?'✗ Error':'⏸ Pending')+'</span>'+
+      '</div>';
+    html+='<div class="tx2 fs-13">'+(r.productIds||[]).length+' products</div>';
+    if(r.status==='running'){
+      html+='<div class="cat-progress"><div class="cat-progress-bar" style="width:'+(r.progress||0)+'%;"></div></div>';
+      html+='<div class="tx3 fs-12">'+( r.progress||0)+'% complete</div>';
+    }
+    if(r.completedAt)html+='<div class="tx3 fs-12">Completed '+r.completedAt+'</div>';
+    html+='</div>';
+  });
+  el.innerHTML=html;
+}
+
+// ---- Catalog Profile Editor ----
+function openCatalogProfile(id){
+  _editCprofId=id;
+  var p=id?catalogProfiles.find(function(x){return x.id===id;}):null;
+  document.getElementById('cprof-title').textContent=p?'Edit Profile':'New Profile';
+  document.getElementById('cprof-name').value=p?p.name:'';
+  document.getElementById('cprof-platform').value=p?(p.platform||'shopify'):'shopify';
+  setCprofStyle(p?(p.imageStyle||'product'):'product');
+  document.getElementById('cprof-backdrop').value=p?(p.imageBackdrop||''):'';
+  document.getElementById('cprof-ratio').value=p?(p.imageAspectRatio||'1:1'):'1:1';
+  document.getElementById('cprof-res').value=p?(p.imageResolution||'1000x1000'):'1000x1000';
+  document.getElementById('cprof-naming').value=p?(p.imageNamingPattern||'{sku}_{index}'):'{sku}_{index}';
+  document.getElementById('cprof-ai-prompt').value=p?(p.aiPromptOverride||''):'';
+  document.getElementById('cprof-cdn').checked=p?(p.cdnEnabled!==false):true;
+  var defExcel=p?(p.excelTemplate||'generic'):'shopify';
+  document.getElementById('cprof-excel').value=defExcel;
+  // Fields
+  var selFields=p?(p.requiredFields||['title','desc','bullets']):['title','desc','bullets'];
+  document.querySelectorAll('#cprof-fields input[type=checkbox]').forEach(function(cb){
+    cb.checked=selFields.indexOf(cb.value)>=0;
+  });
+  cprofPlatformChange();
+  pushScreen('s-catalog-profile');
+}
+function setCprofStyle(s){
+  ['product','lifestyle','stylized'].forEach(function(k){
+    var el=document.getElementById('cprof-style-'+k);
+    if(el)el.className='cat-style-opt'+(k===s?' on':'');
+  });
+  document.getElementById('cprof-style').value=s;
+}
+function cprofPlatformChange(){
+  var pf=document.getElementById('cprof-platform').value;
+  var excelMap={shopify:'shopify',myntra:'myntra',nykaa:'nykaa',ajio:'ajio',amazon:'amazon',whatsapp:'generic',custom:'generic'};
+  document.getElementById('cprof-excel').value=excelMap[pf]||'generic';
+  // Auto-check recommended fields per platform
+  var recommended={myntra:['title','desc','bullets','hsn','fabric','care','sizeChart','origin'],
+    nykaa:['title','desc','bullets','fabric','care'],
+    ajio:['title','desc','bullets','hsn','fabric','care','origin'],
+    amazon:['title','desc','bullets','hsn','fabric','care','sizeChart'],
+    shopify:['title','desc','bullets'],
+    whatsapp:['title','desc'],
+    custom:['title','desc','bullets']};
+  var rec=recommended[pf]||['title','desc','bullets'];
+  document.querySelectorAll('#cprof-fields input[type=checkbox]').forEach(function(cb){
+    cb.checked=rec.indexOf(cb.value)>=0;
+  });
+}
+function saveCatalogProfile(){
+  var nm=document.getElementById('cprof-name').value.trim();
+  if(!nm){showToast('Enter profile name','error');return;}
+  var fields=[];
+  document.querySelectorAll('#cprof-fields input[type=checkbox]:checked').forEach(function(cb){fields.push(cb.value);});
+  var d={
+    id:_editCprofId||uuid(),name:nm,
+    platform:document.getElementById('cprof-platform').value,
+    imageStyle:document.getElementById('cprof-style').value,
+    imageBackdrop:document.getElementById('cprof-backdrop').value,
+    imageAspectRatio:document.getElementById('cprof-ratio').value,
+    imageResolution:document.getElementById('cprof-res').value,
+    requiredFields:fields,
+    imageNamingPattern:document.getElementById('cprof-naming').value||'{sku}_{index}',
+    excelTemplate:document.getElementById('cprof-excel').value,
+    cdnEnabled:document.getElementById('cprof-cdn').checked,
+    aiPromptOverride:document.getElementById('cprof-ai-prompt').value,
+    createdAt:_editCprofId?(catalogProfiles.find(function(x){return x.id===_editCprofId;})||{}).createdAt||todayStr():todayStr(),
+    updatedAt:todayStr()
+  };
+  if(_editCprofId){var idx=catalogProfiles.findIndex(function(x){return x.id===_editCprofId;});if(idx>=0)catalogProfiles[idx]=d;else catalogProfiles.push(d);}
+  else catalogProfiles.push(d);
+  showToast('Profile saved');goBack();
+}
+
+// ---- Catalog Run ----
+function startCatalogRun(profileId){
+  _crunProfileId=profileId;
+  _crunSelectedIds=[];
+  _crunTab=0;
+  var p=catalogProfiles.find(function(x){return x.id===profileId;});
+  document.getElementById('crun-title').textContent=(p?p.name:'Catalog')+' Run';
+  setCrunTab(0);
+  navTo('s-catalog-run');
+}
+function setCrunTab(n){
+  _crunTab=n;
+  document.querySelectorAll('#s-catalog-run .tab').forEach(function(t,i){t.classList.toggle('on',i===n);});
+  for(var i=0;i<3;i++){var el=document.getElementById('crun-t'+i);if(el)el.style.display=i===n?'flex':'none';}
+  if(n===0)renderCrunStep0();
+  else if(n===1)renderCrunStep1();
+  else renderCrunStep2();
+}
+function renderCrunStep0(){
+  var el=document.getElementById('crun-t0');if(!el)return;
+  var p=catalogProfiles.find(function(x){return x.id===_crunProfileId;});
+  if(!p){el.innerHTML='<div class="tx3 fs-13 p-16">No profile selected.</div>';return;}
+  var pl=CAT_PLATFORMS[p.platform]||CAT_PLATFORMS.custom;
+  var html='<div class="card">';
+  html+='<div class="cat-profile-hd" style="margin-bottom:12px;"><span style="font-size:28px;">'+pl.icon+'</span><div><div class="fw-6 fs-15">'+esc(p.name)+'</div><div class="tx2 fs-13">'+pl.name+'</div></div></div>';
+  html+='<div class="sum-row"><span class="tx2">Image style</span><span class="fw-6">'+esc(p.imageStyle)+'</span></div>';
+  if(p.imageBackdrop)html+='<div class="sum-row"><span class="tx2">Backdrop</span><span class="fw-6">'+esc(p.imageBackdrop)+'</span></div>';
+  html+='<div class="sum-row"><span class="tx2">Aspect ratio</span><span class="fw-6">'+esc(p.imageAspectRatio)+'</span></div>';
+  html+='<div class="sum-row"><span class="tx2">Resolution</span><span class="fw-6">'+esc(p.imageResolution)+'</span></div>';
+  html+='<div class="sum-row"><span class="tx2">Content fields</span><span class="fw-6">'+(p.requiredFields||[]).length+'</span></div>';
+  html+='<div class="sum-row"><span class="tx2">CDN hosting</span><span class="fw-6">'+(p.cdnEnabled?'Yes':'No')+'</span></div>';
+  html+='</div>';
+  html+='<div class="card"><div class="sect-hd"><h3>Input method</h3></div>';
+  html+='<div style="display:flex;flex-direction:column;gap:8px;">'+
+    '<label style="display:flex;align-items:center;gap:10px;padding:10px;border:1.5px solid var(--p);border-radius:10px;background:var(--pl);cursor:pointer;"><input type="radio" name="cinput" value="select" checked> <div><div class="fw-6 fs-13">Select from materials</div><div class="tx2 fs-12">Pick products from your inventory</div></div></label>'+
+    '<label style="display:flex;align-items:center;gap:10px;padding:10px;border:1.5px solid var(--br);border-radius:10px;cursor:pointer;"><input type="radio" name="cinput" value="excel"> <div><div class="fw-6 fs-13">Upload Excel / CSV</div><div class="tx2 fs-12">Products imported from your file</div></div></label>'+
+    '<label style="display:flex;align-items:center;gap:10px;padding:10px;border:1.5px solid var(--br);border-radius:10px;cursor:pointer;"><input type="radio" name="cinput" value="images"> <div><div class="fw-6 fs-13">Upload images in bulk</div><div class="tx2 fs-12">Products created from filenames</div></div></label>'+
+    '</div>';
+  html+='</div>';
+  html+='<div id="crun-upload-wrap"></div>';
+  html+='<div style="padding:0 0 16px;"><button class="btn-p" onclick="crunNextStep()">Next: Select products →</button></div>';
+  el.innerHTML=html;
+  // wire radio changes
+  el.querySelectorAll('[name=cinput]').forEach(function(r){
+    r.onchange=function(){
+      var wrap=document.getElementById('crun-upload-wrap');if(!wrap)return;
+      if(r.value==='excel') wrap.innerHTML='<div class="card"><div class="fld"><label>Upload Excel / CSV</label><input type="file" accept=".xlsx,.xls,.csv" id="crun-file"></div><div class="tx3 fs-12">Columns expected: Product Name, SKU, MRP, Variants (comma-sep), Image URL (optional)</div></div>';
+      else if(r.value==='images') wrap.innerHTML='<div class="card"><div class="fld"><label>Upload images</label><input type="file" accept="image/*" multiple id="crun-imgs"><div class="tx3 fs-12" style="margin-top:4px;">Files named as SKU or product name are matched automatically.</div></div></div>';
+      else wrap.innerHTML='';
+    };
+  });
+}
+function crunNextStep(){setCrunTab(1);}
+function renderCrunStep1(){
+  var el=document.getElementById('crun-t1');if(!el)return;
+  var html='<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0 6px;">';
+  html+='<div class="fw-6 fs-14">Select products ('+_crunSelectedIds.length+' selected)</div>';
+  html+='<button class="btn-ghost" onclick="crunSelectAll()">Select all</button></div>';
+  html+='<div style="display:flex;flex-direction:column;">';
+  materials.forEach(function(m){
+    var sel=_crunSelectedIds.indexOf(m.id)>=0;
+    var stock=totalStock(m);
+    html+='<div class="cat-prod-row" onclick="crunToggleProd('+m.id+')">';
+    html+='<div class="cat-prod-check'+(sel?' on':'')+'" id="cpcheck-'+m.id+'">'+(sel?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':'')+'</div>';
+    html+='<div class="flex-1"><div class="fw-6 fs-13">'+esc(m.name)+'</div><div class="tx2 fs-12">'+m.variants.length+' variants · Stock: '+stock+'</div></div>';
+    html+='<span class="chip chip-'+(m.type==='finished'?'f':m.type==='raw'?'r':'p')+' fs-11">'+m.type+'</span>';
+    html+='</div>';
+  });
+  html+='</div>';
+  html+='<div style="padding:12px 0;"><button class="btn-p" onclick="setCrunTab(2)">Review & Generate →</button></div>';
+  el.innerHTML=html;
+}
+function crunToggleProd(id){
+  var idx=_crunSelectedIds.indexOf(id);
+  if(idx>=0)_crunSelectedIds.splice(idx,1);
+  else _crunSelectedIds.push(id);
+  // Update just this row's check
+  var cb=document.getElementById('cpcheck-'+id);
+  if(cb){
+    var sel=_crunSelectedIds.indexOf(id)>=0;
+    cb.className='cat-prod-check'+(sel?' on':'');
+    cb.innerHTML=sel?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':'';
+  }
+  // Update header count
+  var el=document.getElementById('crun-t1');
+  if(el){var hd=el.querySelector('.fw-6.fs-14');if(hd)hd.textContent='Select products ('+_crunSelectedIds.length+' selected)';}
+}
+function crunSelectAll(){
+  _crunSelectedIds=materials.map(function(m){return m.id;});
+  renderCrunStep1();
+}
+function renderCrunStep2(){
+  var el=document.getElementById('crun-t2');if(!el)return;
+  if(!_crunSelectedIds.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-msg">No products selected. Go back and select at least one.</div><button class="btn-s" style="margin-top:16px;" onclick="setCrunTab(1)">← Select products</button></div>';
+    return;
+  }
+  var p=catalogProfiles.find(function(x){return x.id===_crunProfileId;})||{};
+  var pl=CAT_PLATFORMS[p.platform]||CAT_PLATFORMS.custom;
+  var html='<div class="card"><div class="sect-hd"><h3>Summary</h3></div>';
+  html+='<div class="sum-row"><span class="tx2">Profile</span><span class="fw-6">'+esc(p.name||'—')+'</span></div>';
+  html+='<div class="sum-row"><span class="tx2">Platform</span><span class="fw-6">'+pl.icon+' '+pl.name+'</span></div>';
+  html+='<div class="sum-row"><span class="tx2">Products</span><span class="fw-6">'+_crunSelectedIds.length+'</span></div>';
+  var totalVars=_crunSelectedIds.reduce(function(s,id){var m=getMat(id);return s+(m?m.variants.length:0);},0);
+  html+='<div class="sum-row"><span class="tx2">Total variants</span><span class="fw-6">'+totalVars+'</span></div>';
+  html+='<div class="sum-row"><span class="tx2">Images to generate</span><span class="fw-6">~'+totalVars+'</span></div>';
+  html+='<div class="sum-row"><span class="tx2">Content fields</span><span class="fw-6">'+((p.requiredFields||[]).map(function(f){return CAT_FIELD_LABELS[f]||f;}).join(', ')||'None')+'</span></div>';
+  html+='</div>';
+  html+='<div class="card"><div class="sect-hd"><h3>Products selected</h3></div>';
+  _crunSelectedIds.forEach(function(id){
+    var m=getMat(id);if(!m)return;
+    html+='<div class="sum-row"><span class="fs-13">'+esc(m.name)+'</span><span class="tx3 fs-12">'+m.variants.length+' var</span></div>';
+  });
+  html+='</div>';
+  html+='<div class="card" style="background:var(--pl);border-color:var(--pm);">';
+  html+='<div class="fw-6 fs-14 mb-8">What happens when you generate:</div>';
+  html+='<div class="tx2 fs-13" style="display:flex;flex-direction:column;gap:6px;">'+
+    '<div>1️⃣ AI generates '+((p.requiredFields||[]).length)+' content fields per product</div>'+
+    '<div>2️⃣ Images generated in '+esc(p.imageStyle||'product')+' style'+(p.imageBackdrop?' with '+esc(p.imageBackdrop)+' backdrop':'')+'</div>'+
+    (p.cdnEnabled?'<div>3️⃣ Images hosted on CDN, shareable links generated</div>':'')+
+    '<div>'+(p.cdnEnabled?'4️⃣':'3️⃣')+' Excel / CSV ready to download in '+esc(p.excelTemplate||'generic')+' format</div>'+
+    '</div></div>';
+  html+='<button class="btn-p" style="background:var(--g);" onclick="executeCatalogRun()">🚀 Generate Catalog</button>';
+  el.innerHTML=html;
+}
+function executeCatalogRun(){
+  if(!_crunSelectedIds.length){showToast('Select products first','error');return;}
+  if(!_crunProfileId){showToast('No profile selected','error');return;}
+  var runId=uuid();
+  var run={
+    id:runId,profileId:_crunProfileId,
+    productIds:_crunSelectedIds.slice(),
+    status:'running',progress:0,
+    outputExcelUrl:null,outputImagesUrl:null,
+    imagesByMatId:{},contentByMatId:{},
+    createdAt:todayStr(),completedAt:null
+  };
+  catalogRuns.push(run);
+  showToast('Catalog run started 🚀');
+  // Simulate progress
+  var step=0;var total=_crunSelectedIds.length;
+  var interval=setInterval(function(){
+    step++;
+    run.progress=Math.round((step/total)*100);
+    if(step>=total){
+      clearInterval(interval);
+      run.status='done';run.progress=100;
+      run.completedAt=todayStr();
+      run.outputExcelUrl='#'; // placeholder
+      run.outputImagesUrl='#';
+      // Simulate content + CDN URLs per product
+      _crunSelectedIds.forEach(function(id){
+        var m=getMat(id);if(!m)return;
+        run.contentByMatId[id]={
+          title:m.name+' — Premium Quality',
+          desc:'Handcrafted '+m.name.toLowerCase()+' made with finest materials.',
+          bullets:['Premium quality fabric','Comfortable fit','Easy care instructions','Available in multiple sizes'],
+          hsn:'61091000',fabric:'100% Cotton',care:'Machine wash cold',origin:'India'
+        };
+        run.imagesByMatId[id]=m.imgs&&m.imgs.length?m.imgs:[];
+      });
+      showToast('Catalog ready! ✓','success');
+      openCatalogOutput(runId);
+    }
+  },600);
+  _coutRunId=runId;
+  navTo('s-catalog-output');
+  renderCatalogOutput();
+}
+function openCatalogOutput(runId){
+  _coutRunId=runId;
+  var run=catalogRuns.find(function(r){return r.id===runId;});
+  var p=run?catalogProfiles.find(function(x){return x.id===run.profileId;}):null;
+  var pushBtn=document.getElementById('cout-push-btn');
+  if(pushBtn)pushBtn.style.display=(p&&p.platform==='shopify')?'block':'none';
+  pushScreen('s-catalog-output');
+  renderCatalogOutput();
+}
+function renderCatalogOutput(){
+  var el=document.getElementById('cout-body');if(!el)return;
+  var run=catalogRuns.find(function(r){return r.id===_coutRunId;});
+  if(!run){el.innerHTML='<div class="tx3 fs-13 p-16">No run selected.</div>';return;}
+  var p=catalogProfiles.find(function(x){return x.id===run.profileId;})||{};
+  var pl=CAT_PLATFORMS[p.platform]||CAT_PLATFORMS.custom;
+  var html='';
+  // Status card
+  html+='<div class="card">';
+  html+='<div class="row-between mb-8"><div class="fw-6 fs-14">'+pl.icon+' '+esc(p.name||'Run')+'</div><span class="cat-run-status '+run.status+'">'+(run.status==='done'?'✓ Done':run.status==='running'?'⏳ Running':run.status==='error'?'✗ Error':'⏸ Pending')+'</span></div>';
+  if(run.status==='running'){
+    html+='<div class="cat-progress"><div class="cat-progress-bar" style="width:'+run.progress+'%;"></div></div>';
+    html+='<div class="tx3 fs-12 mb-8">Generating... '+run.progress+'%</div>';
+  }
+  html+='<div class="tx2 fs-13">'+(run.productIds||[]).length+' products</div>';
+  if(run.completedAt)html+='<div class="tx3 fs-12">Completed '+run.completedAt+'</div>';
+  html+='</div>';
+  if(run.status==='done'){
+    // Download actions
+    html+='<div class="card"><div class="sect-hd"><h3>Downloads</h3></div>';
+    html+='<button class="btn-s" style="margin-bottom:8px;width:100%;" onclick="showToast(\'Excel download — coming soon\',\'info\')">📥 Download Excel / CSV</button>';
+    html+='<button class="btn-s" style="width:100%;" onclick="showToast(\'Image ZIP download — coming soon\',\'info\')">📥 Download Images ZIP</button>';
+    html+='</div>';
+    // Content preview per product
+    html+='<div class="card"><div class="sect-hd"><h3>Generated Content</h3></div>';
+    (run.productIds||[]).forEach(function(id){
+      var m=getMat(id);var c=run.contentByMatId[id];if(!m||!c)return;
+      html+='<div style="border-bottom:1px solid var(--br);padding:12px 0;">';
+      html+='<div class="fw-6 fs-14 mb-6">'+esc(m.name)+'</div>';
+      if(c.title)html+='<div class="tx2 fs-12 mb-4"><span class="fw-6">Title:</span> '+esc(c.title)+'</div>';
+      if(c.desc)html+='<div class="tx2 fs-12 mb-4"><span class="fw-6">Desc:</span> '+esc(c.desc)+'</div>';
+      if(c.bullets&&c.bullets.length)html+='<div class="tx2 fs-12 mb-4"><span class="fw-6">Bullets:</span> '+c.bullets.map(function(b){return '• '+esc(b);}).join(' ')+'</div>';
+      if(c.fabric)html+='<div class="tx2 fs-12 mb-4"><span class="fw-6">Fabric:</span> '+esc(c.fabric)+'</div>';
+      if(c.care)html+='<div class="tx2 fs-12 mb-4"><span class="fw-6">Care:</span> '+esc(c.care)+'</div>';
+      if(c.hsn)html+='<div class="tx2 fs-12 mb-4"><span class="fw-6">HSN:</span> '+esc(c.hsn)+'</div>';
+      if(c.origin)html+='<div class="tx2 fs-12"><span class="fw-6">Origin:</span> '+esc(c.origin)+'</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+  el.innerHTML=html;
+  // If still running, auto-refresh
+  if(run.status==='running'){
+    setTimeout(function(){
+      if(_coutRunId===runId)renderCatalogOutput();
+    },800);
+  }
+}
+function catPushToShopify(){
+  showToast('Shopify push — connect Shopify in Settings to enable','info');
+}
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded',function(){
